@@ -16,6 +16,15 @@ What does not belong here:
 - formulas, ranking rules, or parameter names
 - research notes and internal reports
 
+## Private overlay
+
+This repo is designed to support one local-only extension folder:
+
+- tracked shared workspace: `src/*`
+- local private overlay: `src/private/*`
+
+The `src/private` folder is ignored by Git. On a trusted personal machine, you can place private pages, local API clients, and business-specific UI there. On a managed or company machine, that folder simply does not exist, and the app stays in safe mode.
+
 ## Start
 
 ```bash
