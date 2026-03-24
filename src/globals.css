@@ -1,0 +1,280 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@400;600;700;800;900&family=Sora:wght@500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 29% 96%;
+    --foreground: 222 47% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 10%;
+
+    --primary: 186 92% 36%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 204 31% 92%;
+    --secondary-foreground: 220 42% 14%;
+
+    --muted: 208 24% 90%;
+    --muted-foreground: 220 14% 37%;
+
+    --accent: 24 96% 53%;
+    --accent-foreground: 220 42% 14%;
+
+    --destructive: 0 80% 56%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 26% 84%;
+    --input: 214 26% 84%;
+    --ring: 186 92% 36%;
+
+    --radius: 0.7rem;
+  }
+
+  .dark {
+    --background: 220 40% 8%;
+    --foreground: 210 24% 93%;
+
+    --card: 220 39% 11%;
+    --card-foreground: 210 24% 93%;
+
+    --popover: 220 39% 11%;
+    --popover-foreground: 210 24% 93%;
+
+    --primary: 184 83% 53%;
+    --primary-foreground: 220 46% 13%;
+
+    --secondary: 217 29% 18%;
+    --secondary-foreground: 210 24% 93%;
+
+    --muted: 217 29% 18%;
+    --muted-foreground: 214 16% 66%;
+
+    --accent: 24 94% 58%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 216 24% 24%;
+    --input: 216 24% 24%;
+    --ring: 184 83% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', 'Sora', sans-serif;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp,
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  .trading-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* 基础光晕背景 */
+  .trading-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    background:
+      radial-gradient(1200px 800px at -10% -20%, hsl(var(--primary) / 0.16), transparent 65%),
+      radial-gradient(1000px 700px at 115% 0%, hsl(var(--accent) / 0.12), transparent 62%),
+      radial-gradient(800px 600px at 55% 120%, hsl(var(--primary) / 0.08), transparent 68%),
+      hsl(var(--background));
+    pointer-events: none;
+  }
+
+  /* 赛博网格与渐变遮罩 */
+  .trading-shell::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image:
+      linear-gradient(to right, hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
+    pointer-events: none;
+  }
+}
+
+/* 极致全局噪点层 (Film Grain) */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -100vh -100vw;
+  width: 300vw;
+  height: 300vh;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  /* 极轻微透明度，避免干扰阅读 */
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  animation: noise 0.5s infinite steps(2);
+}
+
+@keyframes noise {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(1%, 1%);
+  }
+
+  50% {
+    transform: translate(-1%, -1%);
+  }
+
+  75% {
+    transform: translate(-1%, 1%);
+  }
+}
+
+.liquid-glass-container {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05); /* Ultra-transparent "Cicada Wing" Glass */
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 15px 35px -8px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.liquid-gooey-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.glass-pill-v7 {
+  position: absolute;
+  background: rgba(255, 255, 255, 1); 
+  border-radius: 8px;
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 
+    0 4px 12px -2px rgba(0, 0, 0, 0.1),
+    inset 0 1px 1px 0px rgba(255, 255, 255, 0.5);
+}
+
+.nav-item-v7 {
+  position: relative;
+  z-index: 20;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.nav-item-v7.active {
+  color: #1a1a1a; /* Contrast dark on white pill */
+}
+
+.nav-item-v7:hover:not(.active) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.liquid-refraction-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.05), transparent 80%);
+}
+
+@layer utilities {
+  .stagger-1 {
+    animation-delay: 0ms !important;
+  }
+
+  .stagger-2 {
+    animation-delay: 50ms !important;
+  }
+
+  .stagger-3 {
+    animation-delay: 100ms !important;
+  }
+
+  .stagger-4 {
+    animation-delay: 150ms !important;
+  }
+
+  .stagger-5 {
+    animation-delay: 200ms !important;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted-foreground/30;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
