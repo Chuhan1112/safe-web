@@ -8,6 +8,7 @@ import {
   type MouseEventParams,
   type Time,
 } from 'lightweight-charts'
+import { useIsDark } from '@/hooks/useIsDark'
 import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
 
 interface ChartSeries {
@@ -30,12 +31,13 @@ interface ChartProps {
     areaTopColor?: string
     areaBottomColor?: string
   }
+  theme?: 'light' | 'dark'
 }
 
 const EMPTY_DATA: { time: string; value: number }[] = []
 const EMPTY_SERIES: ChartSeries[] = []
 
-export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartProps) => {
+export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }: ChartProps) => {
   const normalizedData = data ?? EMPTY_DATA
   const normalizedSeries = series ?? EMPTY_SERIES
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -43,6 +45,12 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
   const primarySeriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const lastHoverTimeRef = useRef<string | null>(null)
   const hoverTimesRef = useRef<string[]>([])
+  const isDark = useIsDark(theme)
+  const isDarkRef = useRef(isDark)
+
+  useEffect(() => {
+    isDarkRef.current = isDark
+  }, [isDark])
 
   const emitHover = useCallback((nextTime: string | null) => {
     if (!onHoverTime) return
@@ -79,13 +87,47 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
   const {
     backgroundColor = 'transparent',
     lineColor = '#2962FF',
-    textColor = '#d1d5db',
     areaTopColor = 'rgba(41, 98, 255, 0.4)',
     areaBottomColor = 'rgba(41, 98, 255, 0.0)',
   } = colors
+  const textColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
 
   useEffect(() => {
     if (!chartContainerRef.current) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (!chartRef.current || entries.length === 0) return
+      const { width } = entries[0].contentRect
+      chartRef.current.applyOptions({ width })
+    })
+
+    resizeObserver.observe(chartContainerRef.current)
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!chartRef.current) return
+
+    const resolvedTextColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
+    const gridLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+
+    chartRef.current.applyOptions({
+      layout: { textColor: resolvedTextColor },
+      grid: {
+        vertLines: { color: gridLineColor },
+        horzLines: { color: gridLineColor },
+      },
+      timeScale: { borderColor },
+      rightPriceScale: { borderColor },
+    })
+  }, [colors.textColor, isDark])
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return
+
+    const gridLineColor = isDarkRef.current ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDarkRef.current ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -95,15 +137,11 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
       width: chartContainerRef.current.clientWidth,
       height: 400,
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        vertLines: { color: gridLineColor },
+        horzLines: { color: gridLineColor },
       },
-      timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-      },
-      rightPriceScale: {
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-      },
+      timeScale: { borderColor },
+      rightPriceScale: { borderColor },
     })
 
     chartRef.current = chart
@@ -181,16 +219,7 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
 
     chart.subscribeCrosshairMove(onCrosshairMove)
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (!chartRef.current || entries.length === 0) return
-      const { width } = entries[0].contentRect
-      chartRef.current.applyOptions({ width })
-    })
-
-    resizeObserver.observe(chartContainerRef.current)
-
     return () => {
-      resizeObserver.disconnect()
       chart.unsubscribeCrosshairMove(onCrosshairMove)
       onHoverTime?.(null)
       chart.remove()
@@ -198,13 +227,13 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
   }, [
     normalizedData,
     normalizedSeries,
-    onHoverTime,
     emitHover,
     backgroundColor,
     lineColor,
     textColor,
     areaTopColor,
     areaBottomColor,
+    onHoverTime,
   ])
 
   return (

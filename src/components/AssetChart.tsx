@@ -1,6 +1,8 @@
 import { CandlestickSeries, ColorType, createChart, LineSeries } from 'lightweight-charts'
 import type { BusinessDay, IChartApi, MouseEventParams, Time } from 'lightweight-charts'
 import { useEffect, useRef, useState } from 'react'
+import { useIsDark } from '@/hooks/useIsDark'
+import { timeToIso, toBusinessDate } from '@/utils/chartHoverLogic'
 
 interface AssetChartProps {
   data: {
@@ -19,6 +21,7 @@ interface AssetChartProps {
       rsi?: number
     }
   }[]
+  theme?: 'light' | 'dark'
 }
 
 interface HoverInfo {
@@ -36,67 +39,23 @@ interface HoverInfo {
   }
 }
 
-const toBusinessDate = (raw: string): { iso: string; businessDay: BusinessDay } | null => {
-  if (!raw) return null
-  const value = String(raw).trim().split(' ')[0]
+const getChartTheme = (isDark: boolean) => ({
+  textColor: isDark ? '#d1d5db' : '#334155',
+  gridColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  borderColor: isDark ? '#374151' : '#e5e7eb',
+})
 
-  let matched = value.match(/^(\d{2})-(\d{2})-(\d{2})$/)
-  if (matched) {
-    const year = 2000 + Number(matched[1])
-    const month = Number(matched[2])
-    const day = Number(matched[3])
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      return {
-        iso: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-        businessDay: { year, month, day },
-      }
-    }
-  }
-
-  matched = value.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/)
-  if (matched) {
-    const year = Number(matched[1])
-    const month = Number(matched[2])
-    const day = Number(matched[3])
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      return {
-        iso: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-        businessDay: { year, month, day },
-      }
-    }
-  }
-
-  const parsed = new Date(raw)
-  if (Number.isNaN(parsed.getTime())) return null
-  const year = parsed.getFullYear()
-  const month = parsed.getMonth() + 1
-  const day = parsed.getDate()
-  return {
-    iso: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-    businessDay: { year, month, day },
-  }
-}
-
-const timeToIso = (time: unknown): string | null => {
-  if (!time) return null
-  if (typeof time === 'string') return toBusinessDate(time)?.iso ?? null
-  if (typeof time === 'number') {
-    const date = new Date(time * 1000)
-    if (Number.isNaN(date.getTime())) return null
-    return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  }
-  if (typeof time === 'object' && time !== null && 'year' in time && 'month' in time && 'day' in time) {
-    const parsed = time as { year: number; month: number; day: number }
-    return `${String(parsed.year).padStart(4, '0')}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`
-  }
-  return null
-}
-
-export const AssetChart = ({ data }: AssetChartProps) => {
+export const AssetChart = ({ data, theme }: AssetChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 400 })
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
+  const isDark = useIsDark(theme)
+  const isDarkRef = useRef(isDark)
+
+  useEffect(() => {
+    isDarkRef.current = isDark
+  }, [isDark])
 
   useEffect(() => {
     if (!chartContainerRef.current) return
@@ -117,9 +76,21 @@ export const AssetChart = ({ data }: AssetChartProps) => {
   }, [])
 
   useEffect(() => {
-    if (dimensions.width === 0 || !chartContainerRef.current || !data || data.length === 0) return
+    if (!chartRef.current) return
+    const { textColor, gridColor, borderColor } = getChartTheme(isDark)
+    chartRef.current.applyOptions({
+      layout: { textColor },
+      grid: {
+        vertLines: { color: gridColor },
+        horzLines: { color: gridColor },
+      },
+      timeScale: { borderColor },
+      rightPriceScale: { borderColor },
+    })
+  }, [isDark])
 
-    const isDark = document.documentElement.classList.contains('dark')
+  useEffect(() => {
+    if (dimensions.width === 0 || !chartContainerRef.current || !data || data.length === 0) return
 
     if (chartRef.current) {
       chartRef.current.remove()
@@ -127,23 +98,24 @@ export const AssetChart = ({ data }: AssetChartProps) => {
     }
 
     try {
+      const { textColor, gridColor, borderColor } = getChartTheme(isDarkRef.current)
       const chart = createChart(chartContainerRef.current, {
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: isDark ? '#d1d5db' : '#334155',
+          textColor,
         },
         localization: {
           locale: 'zh-CN',
           dateFormat: 'yyyy-MM-dd',
         },
         grid: {
-          vertLines: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
-          horzLines: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
+          vertLines: { color: gridColor },
+          horzLines: { color: gridColor },
         },
         width: dimensions.width,
         height: dimensions.height,
         timeScale: {
-          borderColor: isDark ? '#374151' : '#e5e7eb',
+          borderColor,
           timeVisible: false,
           secondsVisible: false,
           tickMarkFormatter: (time: Time) => {
@@ -154,7 +126,7 @@ export const AssetChart = ({ data }: AssetChartProps) => {
           },
         },
         rightPriceScale: {
-          borderColor: isDark ? '#374151' : '#e5e7eb',
+          borderColor,
         },
       })
 
@@ -287,23 +259,22 @@ export const AssetChart = ({ data }: AssetChartProps) => {
       })
 
       chart.timeScale().fitContent()
-    } catch (error) {
-      console.error('Chart render error:', error)
-    }
 
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.remove()
+      return () => {
+        chart.remove()
         chartRef.current = null
       }
+    } catch (error) {
+      console.error('Failed to create asset chart', error)
     }
   }, [data, dimensions.width, dimensions.height])
 
   return (
     <div className="space-y-3">
       <div ref={chartContainerRef} className="h-[400px] w-full" />
+
       {hoverInfo && (
-        <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/60 bg-card/60 p-3 text-xs md:grid-cols-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 rounded-xl border border-border/70 bg-card/70 p-3 text-sm backdrop-blur">
           <div>
             <div className="text-muted-foreground">Date</div>
             <div className="font-mono">{hoverInfo.date}</div>
@@ -330,11 +301,6 @@ export const AssetChart = ({ data }: AssetChartProps) => {
               {hoverInfo.indicators?.sma20 != null ? hoverInfo.indicators.sma20.toFixed(2) : '--'}
             </div>
           </div>
-        </div>
-      )}
-      {(!data || data.length === 0) && (
-        <div className="rounded-lg border border-border/60 bg-card/40 p-6 text-center text-sm text-muted-foreground">
-          No chart data available
         </div>
       )}
     </div>
