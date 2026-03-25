@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 
+/**
+ * Reactively tracks whether the current theme is dark.
+ * If `theme` is provided, it wins over DOM observation.
+ */
 export function useIsDark(theme?: 'light' | 'dark'): boolean {
   const [observedIsDark, setObservedIsDark] = useState<boolean>(() =>
     document.documentElement.classList.contains('dark'),

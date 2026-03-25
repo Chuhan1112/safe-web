@@ -14,9 +14,11 @@ export function AnimatedNumber({
   const [displayValue, setDisplayValue] = useState(0)
   const startTime = useRef<number | null>(null)
   const startValue = useRef(0)
+  // Track the live displayed value so interrupted animations can continue smoothly
   const displayValueRef = useRef(0)
 
   useEffect(() => {
+    // Restart from the current rendered number instead of the last committed prop value
     startValue.current = displayValueRef.current
     startTime.current = null
     let animationFrameId: number

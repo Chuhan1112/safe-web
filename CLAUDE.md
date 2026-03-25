@@ -34,6 +34,7 @@ Usually safe:
 - shared hooks
 - request caching helpers
 - chart hover/date parsing helpers
+- chart theme responsiveness that only updates chart runtime options
 - animation smoothness fixes
 - skeleton components
 - pure display components that do not alter visual tokens
