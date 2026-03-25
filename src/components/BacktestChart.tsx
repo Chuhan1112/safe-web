@@ -8,6 +8,7 @@ import {
   type MouseEventParams,
   type Time,
 } from 'lightweight-charts'
+import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
 
 interface ChartSeries {
   id: string
@@ -33,28 +34,6 @@ interface ChartProps {
 
 const EMPTY_DATA: { time: string; value: number }[] = []
 const EMPTY_SERIES: ChartSeries[] = []
-
-const normalizeDateString = (raw: string): string => {
-  const value = String(raw).trim().split(' ')[0]
-  const yy = value.match(/^(\d{2})-(\d{2})-(\d{2})$/)
-  if (yy) return `20${yy[1]}-${yy[2]}-${yy[3]}`
-
-  const ymd = value.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/)
-  if (ymd) return `${ymd[1]}-${ymd[2]}-${ymd[3]}`
-
-  return value
-}
-
-const normalizeHoverTime = (time: unknown): string | null => {
-  if (!time) return null
-  if (typeof time === 'string') return normalizeDateString(time)
-  if (typeof time === 'number') return new Date(time * 1000).toISOString().slice(0, 10)
-  if (typeof time === 'object' && time !== null && 'year' in time && 'month' in time && 'day' in time) {
-    const parsed = time as { year: number; month: number; day: number }
-    return `${String(parsed.year).padStart(4, '0')}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`
-  }
-  return null
-}
 
 export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartProps) => {
   const normalizedData = data ?? EMPTY_DATA

@@ -14,9 +14,10 @@ export function AnimatedNumber({
   const [displayValue, setDisplayValue] = useState(0)
   const startTime = useRef<number | null>(null)
   const startValue = useRef(0)
+  const displayValueRef = useRef(0)
 
   useEffect(() => {
-    startValue.current = displayValue
+    startValue.current = displayValueRef.current
     startTime.current = null
     let animationFrameId: number
 
@@ -29,18 +30,17 @@ export function AnimatedNumber({
       const easedProgress = easeOutQuart(progressRatio)
 
       const nextValue = startValue.current + (value - startValue.current) * easedProgress
+      displayValueRef.current = nextValue
       setDisplayValue(nextValue)
 
       if (progressRatio < 1) {
         animationFrameId = requestAnimationFrame(animate)
-      } else {
-        setDisplayValue(value)
       }
     }
 
     animationFrameId = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animationFrameId)
-  }, [displayValue, duration, value])
+  }, [value, duration])
 
   return <>{format(displayValue)}</>
 }
