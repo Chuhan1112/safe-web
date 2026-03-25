@@ -45,19 +45,16 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
   const primarySeriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const lastHoverTimeRef = useRef<string | null>(null)
   const hoverTimesRef = useRef<string[]>([])
-  // Stable ref for onHoverTime — prevents chart rebuild when parent re-renders with new inline fn
-  const onHoverTimeRef = useRef(onHoverTime)
-  onHoverTimeRef.current = onHoverTime
 
   const isDark = useIsDark(theme)
 
   const emitHover = useCallback((nextTime: string | null) => {
-    if (!onHoverTimeRef.current) return
+    if (!onHoverTime) return
     if (nextTime !== lastHoverTimeRef.current) {
       lastHoverTimeRef.current = nextTime
-      onHoverTimeRef.current(nextTime)
+      onHoverTime(nextTime)
     }
-  }, []) // stable — reads onHoverTime via ref
+  }, [onHoverTime])
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!chartRef.current) return
@@ -220,7 +217,7 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
 
     return () => {
       chart.unsubscribeCrosshairMove(onCrosshairMove)
-      onHoverTimeRef.current?.(null)
+      onHoverTime?.(null)
       chart.remove()
     }
   }, [
@@ -232,7 +229,9 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     textColor,
     areaTopColor,
     areaBottomColor,
-  ]) // eslint-disable-line react-hooks/exhaustive-deps
+    isDark,
+    onHoverTime,
+  ])
 
   return (
     <div
