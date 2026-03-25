@@ -1,6 +1,8 @@
 import { CandlestickSeries, ColorType, createChart, LineSeries } from 'lightweight-charts'
 import type { BusinessDay, IChartApi, MouseEventParams, Time } from 'lightweight-charts'
 import { useEffect, useRef, useState } from 'react'
+import { timeToIso, toBusinessDate } from '@/utils/chartHoverLogic'
+import { useIsDark } from '@/hooks/useIsDark'
 
 interface AssetChartProps {
   data: {
@@ -19,6 +21,7 @@ interface AssetChartProps {
       rsi?: number
     }
   }[]
+  theme?: 'light' | 'dark'
 }
 
 interface HoverInfo {
@@ -27,77 +30,17 @@ interface HoverInfo {
   high: number
   low: number
   close: number
-  indicators?: {
-    sma20?: number
-    sma50?: number
-    sma200?: number
-    bb_upper?: number
-    bb_lower?: number
-  }
+  sma20?: number
 }
 
-const toBusinessDate = (raw: string): { iso: string; businessDay: BusinessDay } | null => {
-  if (!raw) return null
-  const value = String(raw).trim().split(' ')[0]
-
-  let matched = value.match(/^(\d{2})-(\d{2})-(\d{2})$/)
-  if (matched) {
-    const year = 2000 + Number(matched[1])
-    const month = Number(matched[2])
-    const day = Number(matched[3])
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      return {
-        iso: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-        businessDay: { year, month, day },
-      }
-    }
-  }
-
-  matched = value.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/)
-  if (matched) {
-    const year = Number(matched[1])
-    const month = Number(matched[2])
-    const day = Number(matched[3])
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      return {
-        iso: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-        businessDay: { year, month, day },
-      }
-    }
-  }
-
-  const parsed = new Date(raw)
-  if (Number.isNaN(parsed.getTime())) return null
-  const year = parsed.getFullYear()
-  const month = parsed.getMonth() + 1
-  const day = parsed.getDate()
-  return {
-    iso: `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-    businessDay: { year, month, day },
-  }
-}
-
-const timeToIso = (time: unknown): string | null => {
-  if (!time) return null
-  if (typeof time === 'string') return toBusinessDate(time)?.iso ?? null
-  if (typeof time === 'number') {
-    const date = new Date(time * 1000)
-    if (Number.isNaN(date.getTime())) return null
-    return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  }
-  if (typeof time === 'object' && time !== null && 'year' in time && 'month' in time && 'day' in time) {
-    const parsed = time as { year: number; month: number; day: number }
-    return `${String(parsed.year).padStart(4, '0')}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`
-  }
-  return null
-}
-
-export const AssetChart = ({ data }: AssetChartProps) => {
+export const AssetChart = ({ data, theme }: AssetChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 400 })
   const [hoverInfo, setHoverInfo] = useState<HoverInfo | null>(null)
+  const isDark = useIsDark(theme)
 
+  // ResizeObserver — independent of chart data and theme
   useEffect(() => {
     if (!chartContainerRef.current) return
 
@@ -116,34 +59,54 @@ export const AssetChart = ({ data }: AssetChartProps) => {
     return () => resizeObserver.disconnect()
   }, [])
 
+  // Theme updates — applyOptions only, no chart rebuild
+  useEffect(() => {
+    if (!chartRef.current) return
+    const textColor = isDark ? '#d1d5db' : '#334155'
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDark ? '#374151' : '#e5e7eb'
+    chartRef.current.applyOptions({
+      layout: { textColor },
+      grid: {
+        vertLines: { color: gridColor },
+        horzLines: { color: gridColor },
+      },
+      timeScale: { borderColor },
+      rightPriceScale: { borderColor },
+    })
+  }, [isDark])
+
+  // Chart build — only when data or dimensions change
   useEffect(() => {
     if (dimensions.width === 0 || !chartContainerRef.current || !data || data.length === 0) return
-
-    const isDark = document.documentElement.classList.contains('dark')
 
     if (chartRef.current) {
       chartRef.current.remove()
       chartRef.current = null
     }
 
+    const textColor = isDark ? '#d1d5db' : '#334155'
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDark ? '#374151' : '#e5e7eb'
+
     try {
       const chart = createChart(chartContainerRef.current, {
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: isDark ? '#d1d5db' : '#334155',
+          textColor,
         },
         localization: {
           locale: 'zh-CN',
           dateFormat: 'yyyy-MM-dd',
         },
         grid: {
-          vertLines: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
-          horzLines: { color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
+          vertLines: { color: gridColor },
+          horzLines: { color: gridColor },
         },
         width: dimensions.width,
         height: dimensions.height,
         timeScale: {
-          borderColor: isDark ? '#374151' : '#e5e7eb',
+          borderColor,
           timeVisible: false,
           secondsVisible: false,
           tickMarkFormatter: (time: Time) => {
@@ -153,9 +116,7 @@ export const AssetChart = ({ data }: AssetChartProps) => {
             return `${year}/${month}/${day}`
           },
         },
-        rightPriceScale: {
-          borderColor: isDark ? '#374151' : '#e5e7eb',
-        },
+        rightPriceScale: { borderColor },
       })
 
       chartRef.current = chart
@@ -260,29 +221,16 @@ export const AssetChart = ({ data }: AssetChartProps) => {
 
       chart.subscribeCrosshairMove((param: MouseEventParams<Time>) => {
         const iso = timeToIso(param?.time)
-        if (!iso) {
-          setHoverInfo(null)
-          return
-        }
+        if (!iso) { setHoverInfo(null); return }
         const row = byIso.get(iso)
-        if (!row) {
-          setHoverInfo(null)
-          return
-        }
-
+        if (!row) { setHoverInfo(null); return }
         setHoverInfo({
           date: iso,
           open: Number(row.open),
           high: Number(row.high),
           low: Number(row.low),
           close: Number(row.close),
-          indicators: {
-            sma20: row.indicators?.sma20,
-            sma50: row.indicators?.sma50,
-            sma200: row.indicators?.sma200,
-            bb_upper: row.indicators?.bb_upper,
-            bb_lower: row.indicators?.bb_lower,
-          },
+          sma20: row.indicators?.sma20,
         })
       })
 
@@ -297,7 +245,7 @@ export const AssetChart = ({ data }: AssetChartProps) => {
         chartRef.current = null
       }
     }
-  }, [data, dimensions.width, dimensions.height])
+  }, [data, dimensions.width, dimensions.height]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-3">
@@ -327,7 +275,7 @@ export const AssetChart = ({ data }: AssetChartProps) => {
           <div>
             <div className="text-muted-foreground">SMA20</div>
             <div className="font-mono">
-              {hoverInfo.indicators?.sma20 != null ? hoverInfo.indicators.sma20.toFixed(2) : '--'}
+              {hoverInfo.sma20 != null ? hoverInfo.sma20.toFixed(2) : '--'}
             </div>
           </div>
         </div>

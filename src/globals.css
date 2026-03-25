@@ -1,71 +1,72 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@400;600;700;800;900&family=Sora:wght@500;600;700;800&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: 210 29% 96%;
-    --foreground: 222 47% 10%;
+@theme {
+  /* Light mode tokens — referenced via CSS variables at runtime */
+  --color-background: hsl(210 29% 96%);
+  --color-foreground: hsl(222 47% 10%);
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 10%;
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 10%);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 10%;
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222 47% 10%);
 
-    --primary: 186 92% 36%;
-    --primary-foreground: 210 40% 98%;
+  --color-primary: hsl(186 92% 36%);
+  --color-primary-foreground: hsl(210 40% 98%);
 
-    --secondary: 204 31% 92%;
-    --secondary-foreground: 220 42% 14%;
+  --color-secondary: hsl(204 31% 92%);
+  --color-secondary-foreground: hsl(220 42% 14%);
 
-    --muted: 208 24% 90%;
-    --muted-foreground: 220 14% 37%;
+  --color-muted: hsl(208 24% 90%);
+  --color-muted-foreground: hsl(220 14% 37%);
 
-    --accent: 24 96% 53%;
-    --accent-foreground: 220 42% 14%;
+  --color-accent: hsl(24 96% 53%);
+  --color-accent-foreground: hsl(220 42% 14%);
 
-    --destructive: 0 80% 56%;
-    --destructive-foreground: 210 40% 98%;
+  --color-destructive: hsl(0 80% 56%);
+  --color-destructive-foreground: hsl(210 40% 98%);
 
-    --border: 214 26% 84%;
-    --input: 214 26% 84%;
-    --ring: 186 92% 36%;
+  --color-border: hsl(214 26% 84%);
+  --color-input: hsl(214 26% 84%);
+  --color-ring: hsl(186 92% 36%);
 
-    --radius: 0.7rem;
-  }
+  --radius: 0.7rem;
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
 
-  .dark {
-    --background: 220 40% 8%;
-    --foreground: 210 24% 93%;
+/* Dark mode overrides */
+.dark {
+  --color-background: hsl(220 40% 8%);
+  --color-foreground: hsl(210 24% 93%);
 
-    --card: 220 39% 11%;
-    --card-foreground: 210 24% 93%;
+  --color-card: hsl(220 39% 11%);
+  --color-card-foreground: hsl(210 24% 93%);
 
-    --popover: 220 39% 11%;
-    --popover-foreground: 210 24% 93%;
+  --color-popover: hsl(220 39% 11%);
+  --color-popover-foreground: hsl(210 24% 93%);
 
-    --primary: 184 83% 53%;
-    --primary-foreground: 220 46% 13%;
+  --color-primary: hsl(184 83% 53%);
+  --color-primary-foreground: hsl(220 46% 13%);
 
-    --secondary: 217 29% 18%;
-    --secondary-foreground: 210 24% 93%;
+  --color-secondary: hsl(217 29% 18%);
+  --color-secondary-foreground: hsl(210 24% 93%);
 
-    --muted: 217 29% 18%;
-    --muted-foreground: 214 16% 66%;
+  --color-muted: hsl(217 29% 18%);
+  --color-muted-foreground: hsl(214 16% 66%);
 
-    --accent: 24 94% 58%;
-    --accent-foreground: 210 40% 98%;
+  --color-accent: hsl(24 94% 58%);
+  --color-accent-foreground: hsl(210 40% 98%);
 
-    --destructive: 0 70% 45%;
-    --destructive-foreground: 210 40% 98%;
+  --color-destructive: hsl(0 70% 45%);
+  --color-destructive-foreground: hsl(210 40% 98%);
 
-    --border: 216 24% 24%;
-    --input: 216 24% 24%;
-    --ring: 184 83% 53%;
-  }
+  --color-border: hsl(216 24% 24%);
+  --color-input: hsl(216 24% 24%);
+  --color-ring: hsl(184 83% 53%);
 }
 
 @layer base {
@@ -108,10 +109,10 @@
     inset: 0;
     z-index: -3;
     background:
-      radial-gradient(1200px 800px at -10% -20%, hsl(var(--primary) / 0.16), transparent 65%),
-      radial-gradient(1000px 700px at 115% 0%, hsl(var(--accent) / 0.12), transparent 62%),
-      radial-gradient(800px 600px at 55% 120%, hsl(var(--primary) / 0.08), transparent 68%),
-      hsl(var(--background));
+      radial-gradient(1200px 800px at -10% -20%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 65%),
+      radial-gradient(1000px 700px at 115% 0%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 62%),
+      radial-gradient(800px 600px at 55% 120%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 68%),
+      var(--color-background);
     pointer-events: none;
   }
 
@@ -122,8 +123,8 @@
     inset: 0;
     z-index: -2;
     background-image:
-      linear-gradient(to right, hsl(var(--foreground) / 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+      linear-gradient(to right, color-mix(in srgb, var(--color-foreground) 4.5%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-foreground) 4.5%, transparent) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
     pointer-events: none;
@@ -140,14 +141,12 @@ body::after {
   z-index: 9999;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   opacity: 0.02;
-  /* 极轻微透明度，避免干扰阅读 */
   mix-blend-mode: overlay;
   pointer-events: none;
   animation: noise 0.5s infinite steps(2);
 }
 
 @keyframes noise {
-
   0%,
   100% {
     transform: translate(0, 0);
@@ -168,11 +167,11 @@ body::after {
 
 .liquid-glass-container {
   display: inline-flex;
-  background: rgba(255, 255, 255, 0.05); /* Ultra-transparent "Cicada Wing" Glass */
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
+  box-shadow:
     0 15px 35px -8px rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   border-radius: 12px;
@@ -190,10 +189,10 @@ body::after {
 
 .glass-pill-v7 {
   position: absolute;
-  background: rgba(255, 255, 255, 1); 
+  background: rgba(255, 255, 255, 1);
   border-radius: 8px;
   transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 
+  box-shadow:
     0 4px 12px -2px rgba(0, 0, 0, 0.1),
     inset 0 1px 1px 0px rgba(255, 255, 255, 0.5);
 }
@@ -208,7 +207,7 @@ body::after {
 }
 
 .nav-item-v7.active {
-  color: #1a1a1a; /* Contrast dark on white pill */
+  color: #1a1a1a;
 }
 
 .nav-item-v7:hover:not(.active) {
@@ -221,7 +220,7 @@ body::after {
   z-index: 5;
   pointer-events: none;
   border-radius: inherit;
-  background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.05), transparent 80%);
+  background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.05), transparent 80%);
 }
 
 @layer utilities {

@@ -14,9 +14,12 @@ export function AnimatedNumber({
   const [displayValue, setDisplayValue] = useState(0)
   const startTime = useRef<number | null>(null)
   const startValue = useRef(0)
+  // 用 ref 实时跟踪当前显示值，避免将 displayValue state 放入 effect 依赖
+  const displayValueRef = useRef(0)
 
   useEffect(() => {
-    startValue.current = displayValue
+    // 以动画触发瞬间的实际显示值作为起始点，支持中途打断后平滑衔接
+    startValue.current = displayValueRef.current
     startTime.current = null
     let animationFrameId: number
 
@@ -29,18 +32,17 @@ export function AnimatedNumber({
       const easedProgress = easeOutQuart(progressRatio)
 
       const nextValue = startValue.current + (value - startValue.current) * easedProgress
+      displayValueRef.current = nextValue
       setDisplayValue(nextValue)
 
       if (progressRatio < 1) {
         animationFrameId = requestAnimationFrame(animate)
-      } else {
-        setDisplayValue(value)
       }
     }
 
     animationFrameId = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animationFrameId)
-  }, [displayValue, duration, value])
+  }, [value, duration])
 
   return <>{format(displayValue)}</>
 }

@@ -8,6 +8,8 @@ import {
   type MouseEventParams,
   type Time,
 } from 'lightweight-charts'
+import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
+import { useIsDark } from '@/hooks/useIsDark'
 
 interface ChartSeries {
   id: string
@@ -29,34 +31,13 @@ interface ChartProps {
     areaTopColor?: string
     areaBottomColor?: string
   }
+  theme?: 'light' | 'dark'
 }
 
 const EMPTY_DATA: { time: string; value: number }[] = []
 const EMPTY_SERIES: ChartSeries[] = []
 
-const normalizeDateString = (raw: string): string => {
-  const value = String(raw).trim().split(' ')[0]
-  const yy = value.match(/^(\d{2})-(\d{2})-(\d{2})$/)
-  if (yy) return `20${yy[1]}-${yy[2]}-${yy[3]}`
-
-  const ymd = value.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/)
-  if (ymd) return `${ymd[1]}-${ymd[2]}-${ymd[3]}`
-
-  return value
-}
-
-const normalizeHoverTime = (time: unknown): string | null => {
-  if (!time) return null
-  if (typeof time === 'string') return normalizeDateString(time)
-  if (typeof time === 'number') return new Date(time * 1000).toISOString().slice(0, 10)
-  if (typeof time === 'object' && time !== null && 'year' in time && 'month' in time && 'day' in time) {
-    const parsed = time as { year: number; month: number; day: number }
-    return `${String(parsed.year).padStart(4, '0')}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`
-  }
-  return null
-}
-
-export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartProps) => {
+export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }: ChartProps) => {
   const normalizedData = data ?? EMPTY_DATA
   const normalizedSeries = series ?? EMPTY_SERIES
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -64,14 +45,19 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
   const primarySeriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const lastHoverTimeRef = useRef<string | null>(null)
   const hoverTimesRef = useRef<string[]>([])
+  // Stable ref for onHoverTime — prevents chart rebuild when parent re-renders with new inline fn
+  const onHoverTimeRef = useRef(onHoverTime)
+  onHoverTimeRef.current = onHoverTime
+
+  const isDark = useIsDark(theme)
 
   const emitHover = useCallback((nextTime: string | null) => {
-    if (!onHoverTime) return
+    if (!onHoverTimeRef.current) return
     if (nextTime !== lastHoverTimeRef.current) {
       lastHoverTimeRef.current = nextTime
-      onHoverTime(nextTime)
+      onHoverTimeRef.current(nextTime)
     }
-  }, [onHoverTime])
+  }, []) // stable — reads onHoverTime via ref
 
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!chartRef.current) return
@@ -93,20 +79,54 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
     emitHover(values[index] || null)
   }
 
-  const handleMouseLeave = () => {
-    emitHover(null)
-  }
+  const handleMouseLeave = () => { emitHover(null) }
 
   const {
     backgroundColor = 'transparent',
     lineColor = '#2962FF',
-    textColor = '#d1d5db',
     areaTopColor = 'rgba(41, 98, 255, 0.4)',
     areaBottomColor = 'rgba(41, 98, 255, 0.0)',
   } = colors
+  // textColor from colors prop takes precedence; otherwise derive from theme
+  const textColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
 
+  // ResizeObserver — independent of data and theme
   useEffect(() => {
     if (!chartContainerRef.current) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (!chartRef.current || entries.length === 0) return
+      const { width } = entries[0].contentRect
+      chartRef.current.applyOptions({ width })
+    })
+
+    resizeObserver.observe(chartContainerRef.current)
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  // Theme updates — applyOptions only, no chart rebuild
+  useEffect(() => {
+    if (!chartRef.current) return
+    const resolvedTextColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
+    const gridLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+    chartRef.current.applyOptions({
+      layout: { textColor: resolvedTextColor },
+      grid: {
+        vertLines: { color: gridLineColor },
+        horzLines: { color: gridLineColor },
+      },
+      timeScale: { borderColor },
+      rightPriceScale: { borderColor },
+    })
+  }, [isDark, colors.textColor])
+
+  // Chart build — only when data, series, or color props change
+  useEffect(() => {
+    if (!chartContainerRef.current) return
+
+    const gridLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -116,15 +136,11 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
       width: chartContainerRef.current.clientWidth,
       height: 400,
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        vertLines: { color: gridLineColor },
+        horzLines: { color: gridLineColor },
       },
-      timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-      },
-      rightPriceScale: {
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-      },
+      timeScale: { borderColor },
+      rightPriceScale: { borderColor },
     })
 
     chartRef.current = chart
@@ -202,31 +218,21 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {} }: ChartP
 
     chart.subscribeCrosshairMove(onCrosshairMove)
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (!chartRef.current || entries.length === 0) return
-      const { width } = entries[0].contentRect
-      chartRef.current.applyOptions({ width })
-    })
-
-    resizeObserver.observe(chartContainerRef.current)
-
     return () => {
-      resizeObserver.disconnect()
       chart.unsubscribeCrosshairMove(onCrosshairMove)
-      onHoverTime?.(null)
+      onHoverTimeRef.current?.(null)
       chart.remove()
     }
   }, [
     normalizedData,
     normalizedSeries,
-    onHoverTime,
     emitHover,
     backgroundColor,
     lineColor,
     textColor,
     areaTopColor,
     areaBottomColor,
-  ])
+  ]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
