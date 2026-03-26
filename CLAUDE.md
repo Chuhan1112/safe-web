@@ -89,6 +89,8 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 
 主题通过 CSS 变量实现，切换时在 `document.documentElement` 上添加/移除 `dark` 类。所有颜色 token（`--color-background`、`--color-foreground`、`--color-primary` 等）在 `globals.css` 的 `@theme` 块中定义（光亮模式默认值），`.dark` 选择器中覆盖暗色模式值。
 
+> **注意**：Tailwind v4 将颜色 token 命名从 `--background` 改为 `--color-background`（以此类推）。私有仓库（`src/private/`）中的组件必须使用同样的 `--color-*` 前缀，否则颜色会失效。两边变量命名必须保持同步。
+
 ### Mock 优先开发
 
 项目无后端依赖。所有演示数据来自 `src/mock/demoData.ts`，新增界面应同样使用 Mock 数据，不引入真实接口。
