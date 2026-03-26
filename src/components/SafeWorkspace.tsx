@@ -67,18 +67,14 @@ export function SafeWorkspace({ hasPrivateOverlay, privateOverlayEnabled }: Safe
     studioScenarios.find((scenario) => scenario.id === selectedScenarioId) ?? studioScenarios[0]
   const selectedLog = studioLogs.find((row) => row.id === selectedLogId) ?? null
 
-  const tabCopy = useMemo(() => {
-    switch (activeTab) {
-      case 'Studio':
-        return 'A richer mock-first workbench inspired by the local overlay, without private semantics.'
-      case 'Collection':
-        return 'Portable surfaces that can be shaped safely on any machine.'
-      case 'Notes':
-        return 'Guardrails for keeping the tracked package neutral and reusable.'
-      default:
-        return 'A company-safe front-end shell with denser interaction patterns and cleaner handoff paths.'
-    }
-  }, [activeTab])
+  const tabCopy =
+    activeTab === 'Studio'
+      ? 'A richer mock-first workbench inspired by the local overlay, without private semantics.'
+      : activeTab === 'Collection'
+        ? 'Portable surfaces that can be shaped safely on any machine.'
+        : activeTab === 'Notes'
+          ? 'Guardrails for keeping the tracked package neutral and reusable.'
+          : 'A company-safe front-end shell with denser interaction patterns and cleaner handoff paths.'
 
   const summaryMetrics = useMemo(() => {
     const window = controlValues.window ?? 6
@@ -593,10 +589,10 @@ export function SafeWorkspace({ hasPrivateOverlay, privateOverlayEnabled }: Safe
       </header>
 
       <main className="space-y-6">
-        {activeTab === 'Overview' && overviewPanel}
-        {activeTab === 'Studio' && studioPanel}
-        {activeTab === 'Collection' && collectionPanel}
-        {activeTab === 'Notes' && notesPanel}
+        <div className={activeTab !== 'Overview' ? 'hidden' : ''}>{overviewPanel}</div>
+        <div className={activeTab !== 'Studio' ? 'hidden' : ''}>{studioPanel}</div>
+        <div className={activeTab !== 'Collection' ? 'hidden' : ''}>{collectionPanel}</div>
+        <div className={activeTab !== 'Notes' ? 'hidden' : ''}>{notesPanel}</div>
       </main>
 
       <Dialog open={Boolean(selectedLog)} onOpenChange={(open) => !open && setSelectedLogId(null)}>
