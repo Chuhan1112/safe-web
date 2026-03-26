@@ -125,13 +125,17 @@ function App() {
         </div>
       </header>
 
-      {activeView === 'private' && PrivateComponent ? (
-        <PrivateComponent />
-      ) : (
+      {/* Always keep both views mounted so background tasks survive tab switches */}
+      <div className={activeView === 'private' ? 'hidden' : ''}>
         <SafeWorkspace
           hasPrivateOverlay={privateOverlayPresent}
           privateOverlayEnabled={privateOverlayEnabled}
         />
+      </div>
+      {PrivateComponent && (
+        <div className={activeView !== 'private' ? 'hidden' : ''}>
+          <PrivateComponent />
+        </div>
       )}
     </div>
   )
