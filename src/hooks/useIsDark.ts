@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 
 /**
  * Reactively tracks whether the current theme is dark.
- * If `theme` prop is provided, uses it directly.
- * Otherwise observes `document.documentElement.classList` via MutationObserver.
+ * If `theme` is provided, it wins over DOM observation.
  */
 export function useIsDark(theme?: 'light' | 'dark'): boolean {
   const [observedIsDark, setObservedIsDark] = useState<boolean>(() =>
@@ -16,7 +15,7 @@ export function useIsDark(theme?: 'light' | 'dark'): boolean {
     const sync = () => setObservedIsDark(document.documentElement.classList.contains('dark'))
     const observer = new MutationObserver(sync)
     observer.observe(document.documentElement, { attributeFilter: ['class'] })
-    sync() // catch any change between render and observer attachment
+    sync()
     return () => observer.disconnect()
   }, [theme])
 

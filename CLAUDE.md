@@ -36,7 +36,32 @@ npm run test -- --reporter=verbose <test-file-path>
 VITE_ENABLE_PRIVATE_OVERLAY=0 npm run dev
 ```
 
+每次批量改动后务必验证：`npm test && npm run lint && npm run build`
+
 Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
+
+## 不得随意修改的文件
+
+以下文件未经视觉 review 不要修改：
+
+- `src/globals.css` — 包含已确认的字体、颜色 token、玻璃态效果、背景光晕和间距氛围，大改会让 app 视觉风格面目全非
+- `tailwind.config.js` / `postcss.config.js` / `vite.config.ts` — 绑定当前 Tailwind v3 工具链，升级 Tailwind 或改变插件配置曾导致 UI 风格变化并破坏本地开发
+- `src/components/ui/calendar.tsx` — 对 `react-day-picker` 版本敏感，改动组件 API 时必须同步对齐包版本
+
+## 安全 vs 高风险改动
+
+**通常安全：**
+- shared hooks、请求缓存工具、图表 hover/日期解析工具
+- 图表主题响应（仅更新 chart runtime options，不重写样式）
+- 动画平滑度修复、骨架屏组件、纯展示组件（不改动视觉 token）
+- bug 修复（不重写布局/样式系统）
+
+**视为产品级改动，需谨慎：**
+- Tailwind 大版本升级
+- 主题 token 重写、全局 CSS 重构
+- 替换 Radix/shadcn 风格原语
+- Calendar 组件 API 变更
+- 图表样式大幅重写
 
 ## 架构概览
 
@@ -44,7 +69,7 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 
 - **React 19 + TypeScript**（严格模式）
 - **Vite 7** 构建工具，支持 HMR
-- **Tailwind CSS 4**（Vite 插件集成，无 `postcss.config.js` / `tailwind.config.js`）配合 CSS 变量实现主题切换
+- **Tailwind CSS 3**（保持 v3 + PostCSS 工具链）配合 CSS 变量实现主题切换
 - **lightweight-charts** 图表库（K 线 + 面积图）
 - **Vitest** 测试框架
 - **shadcn/ui 风格**的 UI 原语（基于 CVA + Radix UI）
@@ -54,7 +79,7 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 | 路径 | 职责 |
 |------|------|
 | `src/App.tsx` | 顶层 Shell：主题切换、私有覆盖层加载、safe/private 视图切换 |
-| `src/components/SafeWorkspace.tsx` | Safe 模式下的 Dashboard 主体（Tab 导航、卡片、表格） |
+| `src/components/SafeWorkspace.tsx` | Safe 模式下的主体（Overview / Studio / Collection / Notes 四个 Tab） |
 | `src/components/AssetChart.tsx` | K 线图，支持 SMA20/50/200、布林带叠加，响应式 + hover 信息栏 |
 | `src/components/BacktestChart.tsx` | 多系列面积图，用于回测曲线对比，支持跨组件 hover 联动（`onHoverTime`） |
 | `src/components/AnimatedNumber.tsx` | easeOutQuart 缓动数字动画 |
@@ -65,10 +90,11 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 | `src/mock/demoData.ts` | Mock 数据结构和类型定义 |
 | `src/lib/utils.ts` | `cn()` 工具函数 |
 | `src/hooks/useLocalStorage.ts` | 带 SSR 安全处理的 localStorage hook |
+| `src/hooks/useIsDark.ts` | 响应式暗色主题 hook（MutationObserver） |
 | `src/utils/requestCache.ts` | TTL 内存缓存单例 |
 | `src/utils/deduplicateRequest.ts` | 并发请求合并（相同 key 的 in-flight 请求只发一次） |
 | `src/utils/chartHoverLogic.ts` | 图表日期解析工具（`parseDateToTs`、`buildTradeMap`、`buildRebalanceMap`） |
-| `src/globals.css` | 全局样式：`@theme` 颜色 token、CSS 变量主题、玻璃态效果、网格背景、噪点动画 |
+| `src/globals.css` | 全局样式：CSS 变量主题、玻璃态效果、网格背景、噪点动画 |
 
 ### 私有覆盖层机制
 
@@ -77,6 +103,9 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 - `overlayMeta`（可选）：`{ label, description, preferredView: 'safe' | 'private' }`
 
 `VITE_ENABLE_PRIVATE_OVERLAY=0` 可完全禁用加载。
+
+`src/private/` 适合放：真实业务编排、私有 API 客户端、业务专属页面和标签。
+公共追踪代码应优先放：通用 UI 原语、通用工具函数、可复用视觉组件。
 
 ### UI 组件开发规范
 
@@ -87,9 +116,9 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 
 ### 主题系统
 
-主题通过 CSS 变量实现，切换时在 `document.documentElement` 上添加/移除 `dark` 类。所有颜色 token（`--color-background`、`--color-foreground`、`--color-primary` 等）在 `globals.css` 的 `@theme` 块中定义（光亮模式默认值），`.dark` 选择器中覆盖暗色模式值。
+主题通过 CSS 变量实现，切换时在 `document.documentElement` 上添加/移除 `dark` 类。颜色 token（`--background`、`--foreground`、`--primary` 等）定义在 `globals.css` 的 `:root` 和 `.dark` 选择器中。
 
-> **注意**：Tailwind v4 将颜色 token 命名从 `--background` 改为 `--color-background`（以此类推）。私有仓库（`src/private/`）中的组件必须使用同样的 `--color-*` 前缀，否则颜色会失效。两边变量命名必须保持同步。
+> **注意**：当前保持 Tailwind v3 变量命名（`--background` 等）。若升级 Tailwind v4 则命名会变为 `--color-background`，私有仓库组件必须同步，否则颜色失效。
 
 ### Mock 优先开发
 

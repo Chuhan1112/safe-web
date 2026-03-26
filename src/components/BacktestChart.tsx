@@ -8,8 +8,8 @@ import {
   type MouseEventParams,
   type Time,
 } from 'lightweight-charts'
-import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
 import { useIsDark } from '@/hooks/useIsDark'
+import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
 
 interface ChartSeries {
   id: string
@@ -45,8 +45,12 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
   const primarySeriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const lastHoverTimeRef = useRef<string | null>(null)
   const hoverTimesRef = useRef<string[]>([])
-
   const isDark = useIsDark(theme)
+  const isDarkRef = useRef(isDark)
+
+  useEffect(() => {
+    isDarkRef.current = isDark
+  }, [isDark])
 
   const emitHover = useCallback((nextTime: string | null) => {
     if (!onHoverTime) return
@@ -76,7 +80,9 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     emitHover(values[index] || null)
   }
 
-  const handleMouseLeave = () => { emitHover(null) }
+  const handleMouseLeave = () => {
+    emitHover(null)
+  }
 
   const {
     backgroundColor = 'transparent',
@@ -84,10 +90,8 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     areaTopColor = 'rgba(41, 98, 255, 0.4)',
     areaBottomColor = 'rgba(41, 98, 255, 0.0)',
   } = colors
-  // textColor from colors prop takes precedence; otherwise derive from theme
   const textColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
 
-  // ResizeObserver — independent of data and theme
   useEffect(() => {
     if (!chartContainerRef.current) return
 
@@ -101,12 +105,13 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     return () => resizeObserver.disconnect()
   }, [])
 
-  // Theme updates — applyOptions only, no chart rebuild
   useEffect(() => {
     if (!chartRef.current) return
+
     const resolvedTextColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
     const gridLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
     const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+
     chartRef.current.applyOptions({
       layout: { textColor: resolvedTextColor },
       grid: {
@@ -116,14 +121,13 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
       timeScale: { borderColor },
       rightPriceScale: { borderColor },
     })
-  }, [isDark, colors.textColor])
+  }, [colors.textColor, isDark])
 
-  // Chart build — only when data, series, or color props change
   useEffect(() => {
     if (!chartContainerRef.current) return
 
-    const gridLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
-    const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+    const gridLineColor = isDarkRef.current ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDarkRef.current ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -229,7 +233,6 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     textColor,
     areaTopColor,
     areaBottomColor,
-    isDark,
     onHoverTime,
   ])
 

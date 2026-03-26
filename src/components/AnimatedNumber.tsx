@@ -14,11 +14,11 @@ export function AnimatedNumber({
   const [displayValue, setDisplayValue] = useState(0)
   const startTime = useRef<number | null>(null)
   const startValue = useRef(0)
-  // 用 ref 实时跟踪当前显示值，避免将 displayValue state 放入 effect 依赖
+  // Track the live displayed value so interrupted animations can continue smoothly
   const displayValueRef = useRef(0)
 
   useEffect(() => {
-    // 以动画触发瞬间的实际显示值作为起始点，支持中途打断后平滑衔接
+    // Restart from the current rendered number instead of the last committed prop value
     startValue.current = displayValueRef.current
     startTime.current = null
     let animationFrameId: number
