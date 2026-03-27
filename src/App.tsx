@@ -19,7 +19,17 @@ const defaultPrivateMeta: Required<PrivateOverlayMeta> = {
 function App() {
   const privateOverlayEnabled = isPrivateOverlayEnabled()
   const privateOverlayPresent = hasPrivateOverlayModule()
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof document !== 'undefined') {
+      if (document.documentElement.classList.contains('light')) return 'light'
+      if (document.documentElement.classList.contains('dark')) return 'dark'
+    }
+    if (typeof localStorage !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme')
+      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme
+    }
+    return 'dark'
+  })
   const [view, setView] = useState<'safe' | 'private'>('safe')
   const [privateComponent, setPrivateComponent] = useState<ComponentType | null>(null)
   const [privateMeta, setPrivateMeta] = useState(defaultPrivateMeta)
@@ -38,9 +48,25 @@ function App() {
             : 'missing'
 
   useEffect(() => {
+    if (typeof document === 'undefined') return
     document.documentElement.classList.remove('light', 'dark')
     document.documentElement.classList.add(theme)
+    localStorage.setItem('theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const syncTheme = () => {
+      const nextTheme = document.documentElement.classList.contains('light') ? 'light' : 'dark'
+      setTheme((current) => (current === nextTheme ? current : nextTheme))
+    }
+
+    const observer = new MutationObserver(syncTheme)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    syncTheme()
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -113,14 +139,16 @@ function App() {
             >
               {privateMeta.label}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg border border-transparent text-muted-foreground hover:border-border hover:text-foreground"
-              onClick={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))}
-            >
-              {theme === 'dark' ? <SunMedium /> : <Moon />}
-            </Button>
+            {activeView !== 'private' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg border border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+                onClick={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))}
+              >
+                {theme === 'dark' ? <SunMedium /> : <Moon />}
+              </Button>
+            )}
           </div>
         </div>
       </header>

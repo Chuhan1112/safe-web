@@ -215,6 +215,22 @@ body::after {
   color: rgba(255, 255, 255, 0.9);
 }
 
+.light .liquid-glass-container {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 18px 38px -16px rgba(15, 23, 42, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+}
+
+.light .nav-item-v7 {
+  color: rgba(15, 23, 42, 0.48);
+}
+
+.light .nav-item-v7:hover:not(.active) {
+  color: rgba(15, 23, 42, 0.82);
+}
+
 .liquid-refraction-overlay {
   position: absolute;
   inset: 0;
