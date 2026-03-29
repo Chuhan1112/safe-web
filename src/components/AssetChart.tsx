@@ -30,6 +30,7 @@ interface HoverInfo {
   high: number
   low: number
   close: number
+  prevClose?: number
   indicators?: {
     sma20?: number
     sma50?: number
@@ -242,12 +243,17 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
           return
         }
 
+        // Find previous day's close for change% calculation
+        const idx = normalized.findIndex(item => item.iso === iso)
+        const prevRow = idx > 0 ? normalized[idx - 1] : null
+
         setHoverInfo({
           date: iso,
           open: Number(row.open),
           high: Number(row.high),
           low: Number(row.low),
           close: Number(row.close),
+          prevClose: prevRow ? Number(prevRow.close) : undefined,
           indicators: {
             sma20: row.indicators?.sma20,
             sma50: row.indicators?.sma50,
@@ -274,29 +280,44 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
       <div ref={chartContainerRef} className="h-[400px] w-full" />
 
       {hoverInfo && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 rounded-xl border border-border/70 bg-card/70 p-3 text-sm backdrop-blur">
+        <div className="grid grid-cols-3 md:grid-cols-7 gap-3 rounded-xl border border-border/70 bg-card/70 p-3 text-sm backdrop-blur">
           <div>
-            <div className="text-muted-foreground">Date</div>
-            <div className="font-mono">{hoverInfo.date}</div>
+            <div className="text-muted-foreground text-xs">Date</div>
+            <div className="font-mono font-medium">{hoverInfo.date}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">Open</div>
+            <div className="text-muted-foreground text-xs">Open</div>
             <div className="font-mono">{hoverInfo.open.toFixed(2)}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">High</div>
+            <div className="text-muted-foreground text-xs">High</div>
             <div className="font-mono">{hoverInfo.high.toFixed(2)}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">Low</div>
+            <div className="text-muted-foreground text-xs">Low</div>
             <div className="font-mono">{hoverInfo.low.toFixed(2)}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">Close</div>
+            <div className="text-muted-foreground text-xs">Close</div>
             <div className="font-mono">{hoverInfo.close.toFixed(2)}</div>
           </div>
           <div>
-            <div className="text-muted-foreground">SMA20</div>
+            <div className="text-muted-foreground text-xs">Change</div>
+            {(() => {
+              if (hoverInfo.prevClose == null || hoverInfo.prevClose === 0) {
+                return <div className="font-mono text-muted-foreground">--</div>
+              }
+              const changePct = ((hoverInfo.close - hoverInfo.prevClose) / hoverInfo.prevClose) * 100
+              const isUp = changePct >= 0
+              return (
+                <div className={`font-mono font-semibold ${isUp ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {isUp ? '+' : ''}{changePct.toFixed(2)}%
+                </div>
+              )
+            })()}
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">SMA20</div>
             <div className="font-mono">
               {hoverInfo.indicators?.sma20 != null ? hoverInfo.indicators.sma20.toFixed(2) : '--'}
             </div>

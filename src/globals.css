@@ -128,6 +128,32 @@
     mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
     pointer-events: none;
   }
+
+  .rdp {
+    --rdp-day-width: 2.25rem;
+    --rdp-day-height: 2.25rem;
+    --rdp-day_button-width: 2.25rem;
+    --rdp-day_button-height: 2.25rem;
+    --rdp-day_button-border-radius: 0.95rem;
+    --rdp-day_button-border: 1px solid transparent;
+    --rdp-nav_button-width: 2rem;
+    --rdp-nav_button-height: 2rem;
+    --rdp-nav-height: 3.25rem;
+    --rdp-dropdown-gap: 0.625rem;
+    --rdp-months-gap: 2.75rem;
+    --rdp-accent-color: hsl(var(--primary));
+    --rdp-accent-background-color: hsl(var(--primary) / 0.10);
+    --rdp-range_middle-background-color: hsl(var(--primary) / 0.10);
+    --rdp-range_start-date-background-color: hsl(var(--primary));
+    --rdp-range_end-date-background-color: hsl(var(--primary));
+    --rdp-selected-color: hsl(var(--primary-foreground));
+    --rdp-today-color: hsl(var(--foreground));
+    --rdp-outside-opacity: 0.5;
+    --rdp-disabled-opacity: 0.5;
+    --rdp-weekday-padding: 0 0 0.75rem 0;
+    --rdp-weekday-opacity: 1;
+    margin: 0;
+  }
 }
 
 /* 极致全局噪点层 (Film Grain) */
