@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { differenceInCalendarDays } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { AssetChart } from "@/components/AssetChart"
-import { api } from "@/private/api/client"
 import { Loader2, ExternalLink } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
@@ -11,9 +10,10 @@ interface AssetDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   dateRange?: DateRange
+  fetchData?: (symbol: string, lookback: number) => Promise<any>
 }
 
-export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange }: AssetDetailDialogProps) {
+export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetchData }: AssetDetailDialogProps) {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,17 +25,18 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange }: Ass
   }, [dateRange])
 
   const loadData = useCallback(async (symbol: string) => {
+    if (!fetchData) return
     setLoading(true)
     setError(null)
     try {
-      const res = await api.getTickerData(symbol, lookback)
+      const res = await fetchData(symbol, lookback)
       setData(res)
     } catch (err: any) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [lookback])
+  }, [lookback, fetchData])
 
   useEffect(() => {
     if (open && ticker) {

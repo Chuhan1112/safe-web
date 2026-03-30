@@ -5,9 +5,31 @@ import { Button } from '@/components/ui/button';
 import { BacktestChart } from '@/components/BacktestChart';
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { ChartSkeleton } from '@/components/skeletons/ChartSkeleton';
-import { cn } from "@/private/lib/utils";
-import { translations } from '@/private/lib/translations';
-import type { BacktestResult } from '@/private/api/client';
+import { cn } from "@/lib/utils";
+
+interface BacktestResult {
+  trade_logs?: Record<string, any>[]
+  logs?: Record<string, any>[]
+  equity_curve?: { time: string; value: number }[]
+  drawdown_curve?: { time: string; value: number }[]
+  metrics?: { cagr?: number }
+}
+
+interface ChartPanelT {
+  equity_curve: string
+  drawdown: string
+  equity_curve_desc: string
+  equity_label: string
+  drawdown_label: string
+  reset_zoom: string
+  hover_time: string
+  snapshot_date: string
+  no_holdings: string
+  trade_snapshot: string
+  rebalance_snapshot: string
+  no_snapshot_hint: string
+  no_data: string
+}
 
 interface ChartPanelProps {
   result: BacktestResult | null;
@@ -21,7 +43,7 @@ interface ChartPanelProps {
   setHighlightStrategy: (id: string | null) => void;
   getStrategyName: (id: string) => string;
   comparePalette: string[];
-  t: typeof translations['en'];
+  t: ChartPanelT;
   loading: boolean;
   error: string | null;
 }

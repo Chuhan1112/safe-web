@@ -2,12 +2,22 @@ import { memo } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TickerLink } from "@/components/TickerLink"
 
-import { translations } from '@/private/lib/translations'
+interface RebalanceLogsT {
+  date: string
+  portfolio_value: string
+  selected_assets: string
+  weights: string
+  buy?: string
+  holds?: string
+  sold?: string
+  empty_position: string
+  cash_weight: string
+}
 
 interface RebalanceLogsTableProps {
-  logs: Record<string, unknown>[];
+  logs: Record<string, any>[];
   logFilter: string;
-  t: typeof translations['en'];
+  t: RebalanceLogsT;
   handleTickerClick: (ticker: string) => void;
   comparePalette: string[];
 }
@@ -93,7 +103,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
                             <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/80" />
-                            {(t as Record<string, string>).holds || "持有"}
+                            {t.holds || "持有"}
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-2">

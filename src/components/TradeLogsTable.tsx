@@ -1,13 +1,19 @@
 import { memo, Fragment } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TickerLink } from "@/components/TickerLink"
-import { cn } from "@/private/lib/utils"
-import { translations } from '@/private/lib/translations'
+import { cn } from "@/lib/utils"
+
+interface TradeLogsT {
+  action: string
+  symbol?: string
+  price?: string
+  reason: string
+}
 
 interface TradeLogsTableProps {
-  logs: Record<string, unknown>[];
+  logs: Record<string, any>[];
   logFilter: string;
-  t: typeof translations['en'];
+  t: TradeLogsT;
   handleTickerClick: (ticker: string) => void;
 }
 
