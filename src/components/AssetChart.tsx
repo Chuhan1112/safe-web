@@ -280,28 +280,28 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
       <div ref={chartContainerRef} className="h-[400px] w-full" />
 
       {hoverInfo && (
-        <div className="grid grid-cols-3 md:grid-cols-7 gap-3 rounded-xl border border-border/70 bg-card/70 p-3 text-sm backdrop-blur">
-          <div>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-sm backdrop-blur">
+          <div className="min-w-[90px]">
             <div className="text-muted-foreground text-xs">Date</div>
-            <div className="font-mono font-medium">{hoverInfo.date}</div>
+            <div className="font-mono font-medium whitespace-nowrap">{hoverInfo.date}</div>
           </div>
-          <div>
+          <div className="min-w-[52px]">
             <div className="text-muted-foreground text-xs">Open</div>
             <div className="font-mono">{hoverInfo.open.toFixed(2)}</div>
           </div>
-          <div>
+          <div className="min-w-[52px]">
             <div className="text-muted-foreground text-xs">High</div>
             <div className="font-mono">{hoverInfo.high.toFixed(2)}</div>
           </div>
-          <div>
+          <div className="min-w-[52px]">
             <div className="text-muted-foreground text-xs">Low</div>
             <div className="font-mono">{hoverInfo.low.toFixed(2)}</div>
           </div>
-          <div>
+          <div className="min-w-[52px]">
             <div className="text-muted-foreground text-xs">Close</div>
             <div className="font-mono">{hoverInfo.close.toFixed(2)}</div>
           </div>
-          <div>
+          <div className="min-w-[64px]">
             <div className="text-muted-foreground text-xs">Change</div>
             {(() => {
               if (hoverInfo.prevClose == null || hoverInfo.prevClose === 0) {
@@ -316,7 +316,7 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
               )
             })()}
           </div>
-          <div>
+          <div className="min-w-[52px]">
             <div className="text-muted-foreground text-xs">SMA20</div>
             <div className="font-mono">
               {hoverInfo.indicators?.sma20 != null ? hoverInfo.indicators.sma20.toFixed(2) : '--'}
