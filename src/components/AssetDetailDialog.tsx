@@ -17,6 +17,7 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const missingDataSource = open && !!ticker && !fetchData
 
   const lookback = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return 252
@@ -92,6 +93,11 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
             </div>
           ) : data ? (
             <AssetChart data={data.data} />
+          ) : missingDataSource ? (
+            <div className="flex h-[400px] items-center justify-center text-muted-foreground flex-col gap-2 bg-muted/20 rounded-lg border border-border/50">
+              <span className="font-semibold">Market data unavailable</span>
+              <span className="text-sm opacity-80">This workspace did not provide a ticker data loader.</span>
+            </div>
           ) : null}
         </div>
       </DialogContent>
