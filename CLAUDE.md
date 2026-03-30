@@ -78,10 +78,14 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 
 | 路径 | 职责 |
 |------|------|
-| `src/App.tsx` | 顶层 Shell：主题切换、私有覆盖层加载、safe/private 视图切换 |
-| `src/components/SafeWorkspace.tsx` | Safe 模式下的主体（Overview / Studio / Collection / Notes 四个 Tab） |
-| `src/components/AssetChart.tsx` | K 线图，支持 SMA20/50/200、布林带叠加，响应式 + hover 信息栏 |
+| `src/App.tsx` | 顶层 Shell：主题切换（持久化到 localStorage）、私有覆盖层加载、safe/private 视图切换；两个视图**始终 mounted**，用 CSS hidden 切换，保证后台任务不中断 |
+| `src/components/SafeWorkspace.tsx` | Safe 模式下的主体（Overview / Studio / Collection / Notes 四个 Tab），Tab 同样 CSS hidden 切换 |
+| `src/components/AssetChart.tsx` | K 线图，支持 SMA20/50/200、布林带叠加、日涨跌幅，响应式 + hover 信息栏 |
 | `src/components/BacktestChart.tsx` | 多系列面积图，用于回测曲线对比，支持跨组件 hover 联动（`onHoverTime`） |
+| `src/components/ChartPanel.tsx` | 回测图表面板（equity/drawdown 切换、多策略对比、hover 持仓快照），从私有区提取的公共组件 |
+| `src/components/AssetDetailDialog.tsx` | 标的详情弹窗，接受可选 `fetchData` prop 加载 K 线数据（无 prop 时不发请求，safe 模式下安全渲染） |
+| `src/components/TradeLogsTable.tsx` | 交易日志表格，按日期分组展示 BUY/SELL/HOLD 记录 |
+| `src/components/RebalanceLogsTable.tsx` | 再平衡日志表格，展示持仓变动、权重和价格 |
 | `src/components/AnimatedNumber.tsx` | easeOutQuart 缓动数字动画 |
 | `src/components/TickerLink.tsx` | 标的代码按钮，点击触发回调（不导航） |
 | `src/components/skeletons/` | `ChartSkeleton`、`TableSkeleton` 加载占位 |
@@ -90,11 +94,11 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 | `src/mock/demoData.ts` | Mock 数据结构和类型定义 |
 | `src/lib/utils.ts` | `cn()` 工具函数 |
 | `src/hooks/useLocalStorage.ts` | 带 SSR 安全处理的 localStorage hook |
-| `src/hooks/useIsDark.ts` | 响应式暗色主题 hook（MutationObserver） |
+| `src/hooks/useIsDark.ts` | 响应式暗色主题 hook（MutationObserver），带 SSR guard |
 | `src/utils/requestCache.ts` | TTL 内存缓存单例 |
 | `src/utils/deduplicateRequest.ts` | 并发请求合并（相同 key 的 in-flight 请求只发一次） |
 | `src/utils/chartHoverLogic.ts` | 图表日期解析工具（`parseDateToTs`、`buildTradeMap`、`buildRebalanceMap`） |
-| `src/globals.css` | 全局样式：CSS 变量主题、玻璃态效果、网格背景、噪点动画 |
+| `src/globals.css` | 全局样式：CSS 变量主题、玻璃态效果、网格背景、噪点动画、scrollbar 样式 |
 
 ### 私有覆盖层机制
 
@@ -105,7 +109,9 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 `VITE_ENABLE_PRIVATE_OVERLAY=0` 可完全禁用加载。
 
 `src/private/` 适合放：真实业务编排、私有 API 客户端、业务专属页面和标签。
-公共追踪代码应优先放：通用 UI 原语、通用工具函数、可复用视觉组件。
+公共区（`src/components/`）适合放：通用 UI 原语、通用工具函数、可复用视觉组件。
+
+**提取原则**：从私有区提取组件到公共区时，必须同时剥离所有 `@/private/*` 依赖——用本地接口替换私有类型，用注入 prop 替换私有 API 调用，确保 `src/private/` 不存在时 build 仍能通过。
 
 ### UI 组件开发规范
 
@@ -114,9 +120,13 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 - 类名合并一律使用 `cn()`（来自 `src/lib/utils.ts`）
 - 路径别名 `@/*` 指向 `./src/*`
 
+### 视图与 Tab 切换
+
+Safe/Private 视图切换和 SafeWorkspace 内的 Tab 切换均使用 **CSS hidden** 方案（`className="hidden"`），而非条件渲染。两个视图始终 mounted，切换时不会 unmount 组件树，保证后台 polling、WebSocket、任务进度状态不中断。
+
 ### 主题系统
 
-主题通过 CSS 变量实现，切换时在 `document.documentElement` 上添加/移除 `dark` 类。颜色 token（`--background`、`--foreground`、`--primary` 等）定义在 `globals.css` 的 `:root` 和 `.dark` 选择器中。
+主题通过 CSS 变量实现，切换时在 `document.documentElement` 上添加/移除 `dark` 类，并持久化到 `localStorage`。颜色 token（`--background`、`--foreground`、`--primary` 等）定义在 `globals.css` 的 `:root` 和 `.dark` 选择器中。`App.tsx` 同时用 `MutationObserver` 监听 `<html>` class，Private overlay 自行切换主题时 App 层也能同步。
 
 > **注意**：当前保持 Tailwind v3 变量命名（`--background` 等）。若升级 Tailwind v4 则命名会变为 `--color-background`，私有仓库组件必须同步，否则颜色失效。
 
