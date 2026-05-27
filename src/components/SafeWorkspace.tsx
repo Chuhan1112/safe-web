@@ -51,11 +51,12 @@ const toneClasses: Record<StatusTone, string> = {
 }
 
 interface SafeWorkspaceProps {
+  activeView?: string
   hasPrivateOverlay: boolean
   privateOverlayEnabled: boolean
 }
 
-export function SafeWorkspace({ hasPrivateOverlay, privateOverlayEnabled }: SafeWorkspaceProps) {
+export function SafeWorkspace({ activeView: _activeView, hasPrivateOverlay, privateOverlayEnabled }: SafeWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('Overview')
   const [selectedScenarioId, setSelectedScenarioId] = useState(studioScenarios[0]?.id ?? 'baseline')
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
