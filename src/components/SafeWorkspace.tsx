@@ -25,7 +25,7 @@ interface SafeWorkspaceProps {
 
 const bottomTabs = ['Metrics', 'Trades', 'Rebalance'] as const
 
-export function SafeWorkspace({ activeView = 'backtest', hasPrivateOverlay: _hasPrivateOverlay, privateOverlayEnabled: _privateOverlayEnabled }: SafeWorkspaceProps) {
+export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
   const [chartView, setChartView] = useState<'equity' | 'drawdown'>('equity')
   const [bottomTab, setBottomTab] = useState<(typeof bottomTabs)[number]>('Metrics')
   const [loading, setLoading] = useState(false)

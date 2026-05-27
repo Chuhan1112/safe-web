@@ -111,12 +111,14 @@ export const ChartPanel = React.memo(({
       const rows = hoverLookup.tradeByDate.get(tradeRow.date) || [];
       const latest = rows[rows.length - 1];
       const holdings: string[] = latest?.Snapshot?.holdings || [];
+      const names: Record<string, string> = latest?.Snapshot?.names || {};
       
       const actionOrder: Record<string, number> = { 'SELL': 0, 'HOLD': 1, 'BUY': 2 };
       const actionRows = rows
         .filter((row: any) => row?.Ticker)
         .map((row: any) => ({
           ticker: String(row.Ticker),
+          name: names[String(row.Ticker)] || String(row.Ticker),
           action: String(row.Action || ''),
           price: Number(row.Price),
         }))
@@ -126,12 +128,13 @@ export const ChartPanel = React.memo(({
           if (orderA !== orderB) return orderA - orderB;
           return a.ticker.localeCompare(b.ticker);
         })
-        .slice(0, 12); // 增加容量，因为分组后更易读
+        .slice(0, 12);
 
       return {
         source: 'trade' as const,
         date: tradeRow.date,
         holdings,
+        names,
         prices: null as Record<string, number> | null,
         weights: null as Record<string, string> | null,
         actions: actionRows,
@@ -143,26 +146,28 @@ export const ChartPanel = React.memo(({
       if (!log) return null;
       const holdings: string[] = (log.Selected || []).filter(Boolean);
       const prevHoldings = log.PrevHoldings || [];
+      const names: Record<string, string> = log.Names || {};
       
       // 生成类似 trade 的 actions 列表以便展示聚合标签
-      const rebalanceActions: { ticker: string; action: string; price: number }[] = [];
+      const rebalanceActions: { ticker: string; name: string; action: string; price: number }[] = [];
       
       // 1. SELLs
       const exited = (log.Exited || []).filter(Boolean);
-      exited.forEach((t: string) => rebalanceActions.push({ ticker: t, action: 'SELL', price: log.ExitPrices?.[t] || 0 }));
+      exited.forEach((t: string) => rebalanceActions.push({ ticker: t, name: names[t] || t, action: 'SELL', price: log.ExitPrices?.[t] || 0 }));
       
       // 2. HOLDs
       const holds = holdings.filter(t => prevHoldings.includes(t));
-      holds.forEach(t => rebalanceActions.push({ ticker: t, action: 'HOLD', price: log.Prices?.[t] || 0 }));
+      holds.forEach(t => rebalanceActions.push({ ticker: t, name: names[t] || t, action: 'HOLD', price: log.Prices?.[t] || 0 }));
       
       // 3. BUYs
       const buys = holdings.filter(t => !prevHoldings.includes(t));
-      buys.forEach(t => rebalanceActions.push({ ticker: t, action: 'BUY', price: log.Prices?.[t] || 0 }));
+      buys.forEach(t => rebalanceActions.push({ ticker: t, name: names[t] || t, action: 'BUY', price: log.Prices?.[t] || 0 }));
 
       return {
         source: 'rebalance' as const,
         date: rebalanceRow.date,
         holdings,
+        names,
         prices: (log.Prices || null) as Record<string, number> | null,
         weights: (log.Weights || null) as Record<string, string> | null,
         actions: rebalanceActions.slice(0, 12),
@@ -262,9 +267,10 @@ export const ChartPanel = React.memo(({
                     {hoveredSnapshot.holdings.slice(0, 8).map((h: string) => {
                       const raw = String(h);
                       const ticker = raw.split('(')[0]?.trim();
+                      const name = hoveredSnapshot.names?.[ticker] || ticker;
                       return (
                         <span key={raw} className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-[9px] font-mono border border-border/30 text-muted-foreground">
-                          {ticker || raw}
+                          {name}
                         </span>
                       );
                     })}
@@ -305,7 +311,7 @@ export const ChartPanel = React.memo(({
                         ) : (
                           <Minus className="h-3 w-3" />
                         )}
-                        <span className="font-bold tracking-tight">{row.ticker}</span>
+                        <span className="font-bold tracking-tight">{row.name || row.ticker}</span>
                         <span className="opacity-60">${Number.isFinite(row.price) ? row.price.toFixed(2) : '--'}</span>
                       </span>
                     ))}
