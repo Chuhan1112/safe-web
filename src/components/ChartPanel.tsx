@@ -242,17 +242,19 @@ export const ChartPanel = React.memo(({
             ))}
           </div>
         )}
-        {!compareMode && hoveredTime && (
-          <div className="mt-2 rounded-md border border-primary/25 bg-primary/10 px-2.5 py-2 text-[11px]">
-            {hoveredSnapshot ? (
+      </CardHeader>
+      <CardContent className="p-0 flex-1 relative">
+        {!compareMode && hoveredTime && hoveredSnapshot && (
+          <div className="absolute top-3 left-3 z-10 pointer-events-none transition-opacity duration-200 max-w-[65%] md:max-w-[50%]">
+            <div className="rounded-lg border border-border/40 bg-background/80 backdrop-blur-md px-3 py-2.5 shadow-sm">
               <div className="flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex flex-col gap-0.5 shrink-0">
-                    <span className="font-bold text-foreground/90 whitespace-nowrap">
-                      {t.hover_time}: {hoveredTime}
+                    <span className="font-bold text-foreground/90 whitespace-nowrap text-[11px]">
+                      {hoveredTime}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/70 whitespace-nowrap line-clamp-1">
-                      {t.snapshot_date}: {hoveredSnapshot.date}
+                    <span className="text-[9px] text-muted-foreground/70 whitespace-nowrap line-clamp-1">
+                      {hoveredSnapshot.date}
                     </span>
                   </div>
 
@@ -261,18 +263,18 @@ export const ChartPanel = React.memo(({
                       const raw = String(h);
                       const ticker = raw.split('(')[0]?.trim();
                       return (
-                        <span key={raw} className="inline-flex items-center rounded-sm bg-background/40 px-1 py-0.5 text-[9px] font-mono border border-border/20 text-muted-foreground hover:text-foreground transition-colors">
+                        <span key={raw} className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-[9px] font-mono border border-border/30 text-muted-foreground">
                           {ticker || raw}
                         </span>
                       );
                     })}
                     {hoveredSnapshot.holdings.length > 8 && (
-                      <span className="inline-flex items-center rounded-sm bg-background/40 px-1 py-0.5 text-[9px] text-muted-foreground/60 border border-border/10">
+                      <span className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-[9px] text-muted-foreground/60 border border-border/20">
                         +{hoveredSnapshot.holdings.length - 8}
                       </span>
                     )}
                     {(!hoveredSnapshot.holdings || hoveredSnapshot.holdings.length === 0) && (
-                      <span className="text-muted-foreground/40 italic">{t.no_holdings}</span>
+                      <span className="text-muted-foreground/40 italic text-[10px]">{t.no_holdings}</span>
                     )}
                   </div>
 
@@ -283,12 +285,12 @@ export const ChartPanel = React.memo(({
                   </div>
                 </div>
                 {hoveredSnapshot.actions && hoveredSnapshot.actions.length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap gap-1">
+                  <div className="mt-1 flex flex-wrap gap-1.5">
                     {hoveredSnapshot.actions.map((row: any, idx: number) => (
                       <span
                         key={`${row.ticker}-${idx}`}
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-mono border transition-all shadow-sm",
+                          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-mono border shadow-sm",
                           row.action === "BUY"
                             ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : row.action === "SELL"
@@ -310,13 +312,9 @@ export const ChartPanel = React.memo(({
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="text-muted-foreground">{t.no_snapshot_hint}</div>
-            )}
+            </div>
           </div>
         )}
-      </CardHeader>
-      <CardContent className="p-0 flex-1 relative">
         {loading ? (
           <ChartSkeleton />
         ) : error ? (

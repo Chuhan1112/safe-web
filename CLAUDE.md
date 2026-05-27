@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目说明
 
-**web-safe** 是一个公司安全的前端工作空间，用于 UI 开发、组件实验和布局探索。此仓库只包含 UI 原语、布局、交互实验和 Mock 数据，**不包含**私有接口、业务逻辑、算法公式或研究记录。
+**web** 是一个公司安全的前端工作空间，用于 UI 开发、组件实验和布局探索。此仓库只包含 UI 原语、布局、交互实验和 Mock 数据，**不包含**私有接口、业务逻辑、算法公式或研究记录。
 
 **安全规则**：如果某个界面、标签、数据 payload 或测试名称揭示了私有系统的工作方式，应保留在私有仓库中。私有内容放在 `src/private/`（已 gitignore），通过私有覆盖层机制注入。
 

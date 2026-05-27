@@ -1,6 +1,6 @@
-# web-safe
+# web
 
-`web-safe` is a company-safe front-end workspace extracted from the private project.
+`web` is a company-safe front-end workspace extracted from the private project.
 
 What stays here:
 
