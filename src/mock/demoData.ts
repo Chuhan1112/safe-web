@@ -420,3 +420,96 @@ export const focusAssetSeries = [
     indicators: { sma20: 120.4, sma50: 113.9, sma200: 104.7, bb_upper: 130.1, bb_lower: 112.8 },
   },
 ]
+
+// ---- Backtest mock data ----
+
+export interface BacktestMetrics {
+  cagr: number
+  sharpe: number
+  maxDrawdown: number
+  winRate: number
+  totalTrades: number
+  totalReturn: number
+}
+
+export const mockBacktestMetrics: BacktestMetrics = {
+  cagr: 18.3,
+  sharpe: 1.42,
+  maxDrawdown: -12.5,
+  winRate: 62.8,
+  totalTrades: 156,
+  totalReturn: 83.2,
+}
+
+export const mockEquityCurve = [
+  { time: '2023-01-02', value: 100000 },
+  { time: '2023-02-01', value: 103200 },
+  { time: '2023-03-01', value: 101800 },
+  { time: '2023-04-03', value: 105600 },
+  { time: '2023-05-01', value: 108400 },
+  { time: '2023-06-01', value: 107100 },
+  { time: '2023-07-03', value: 112300 },
+  { time: '2023-08-01', value: 110800 },
+  { time: '2023-09-01', value: 109200 },
+  { time: '2023-10-02', value: 113500 },
+  { time: '2023-11-01', value: 116200 },
+  { time: '2023-12-01', value: 119800 },
+  { time: '2024-01-02', value: 122400 },
+  { time: '2024-02-01', value: 125100 },
+  { time: '2024-03-01', value: 123800 },
+  { time: '2024-04-01', value: 128300 },
+  { time: '2024-05-01', value: 131200 },
+  { time: '2024-06-03', value: 129500 },
+  { time: '2024-07-01', value: 134800 },
+  { time: '2024-08-01', value: 133100 },
+  { time: '2024-09-02', value: 136200 },
+  { time: '2024-10-01', value: 138900 },
+  { time: '2024-11-01', value: 141500 },
+  { time: '2024-12-02', value: 143200 },
+]
+
+export const mockDrawdownCurve = [
+  { time: '2023-01-02', value: 0 },
+  { time: '2023-02-01', value: -0.5 },
+  { time: '2023-03-01', value: -2.1 },
+  { time: '2023-04-03', value: -0.8 },
+  { time: '2023-05-01', value: -1.2 },
+  { time: '2023-06-01', value: -3.5 },
+  { time: '2023-07-03', value: -1.0 },
+  { time: '2023-08-01', value: -2.8 },
+  { time: '2023-09-01', value: -4.2 },
+  { time: '2023-10-02', value: -1.5 },
+  { time: '2023-11-01', value: -0.6 },
+  { time: '2023-12-01', value: -0.3 },
+  { time: '2024-01-02', value: -1.8 },
+  { time: '2024-02-01', value: -0.9 },
+  { time: '2024-03-01', value: -2.5 },
+  { time: '2024-04-01', value: -0.7 },
+  { time: '2024-05-01', value: -0.4 },
+  { time: '2024-06-03', value: -3.1 },
+  { time: '2024-07-01', value: -1.2 },
+  { time: '2024-08-01', value: -2.6 },
+  { time: '2024-09-02', value: -1.0 },
+  { time: '2024-10-01', value: -0.5 },
+  { time: '2024-11-01', value: -0.3 },
+  { time: '2024-12-02', value: -0.2 },
+]
+
+export const mockTradeLogs: Record<string, any>[] = [
+  { Date: '2023-01-03', Ticker: 'AAPL', TickerName: 'Apple', Action: 'BUY', Price: 130.28, Reason: '唐奇安突破 Entry', PnL: null, Snapshot: { holdings: ['AAPL (45%)', 'MSFT (35%)', 'Cash (20%)'], names: { AAPL: 'Apple', MSFT: 'Microsoft' } } },
+  { Date: '2023-01-03', Ticker: 'MSFT', TickerName: 'Microsoft', Action: 'BUY', Price: 242.58, Reason: '唐奇安突破 Entry', PnL: null, Snapshot: { holdings: ['AAPL (45%)', 'MSFT (35%)', 'Cash (20%)'], names: { AAPL: 'Apple', MSFT: 'Microsoft' } } },
+  { Date: '2023-02-15', Ticker: 'NVDA', TickerName: 'NVIDIA', Action: 'BUY', Price: 224.52, Reason: '动量轮动 Entry', PnL: null, Snapshot: { holdings: ['NVDA (40%)', 'AAPL (30%)', 'Cash (30%)'], names: { NVDA: 'NVIDIA', AAPL: 'Apple' } } },
+  { Date: '2023-02-15', Ticker: 'MSFT', TickerName: 'Microsoft', Action: 'SELL', Price: 252.18, Reason: '唐奇安离场 Exit', PnL: 428.16, Snapshot: { holdings: ['NVDA (40%)', 'AAPL (30%)', 'Cash (30%)'], names: { NVDA: 'NVIDIA', AAPL: 'Apple' } } },
+  { Date: '2023-04-10', Ticker: 'AAPL', TickerName: 'Apple', Action: 'SELL', Price: 132.55, Reason: '唐奇安离场 Exit', PnL: 102.15, Snapshot: { holdings: ['NVDA (50%)', 'Cash (50%)'], names: { NVDA: 'NVIDIA' } } },
+  { Date: '2023-06-20', Ticker: 'GOOGL', TickerName: 'Alphabet', Action: 'BUY', Price: 124.35, Reason: '均值回归 Entry', PnL: null, Snapshot: { holdings: ['NVDA (35%)', 'GOOGL (30%)', 'Cash (35%)'], names: { NVDA: 'NVIDIA', GOOGL: 'Alphabet' } } },
+  { Date: '2023-09-05', Ticker: 'NVDA', TickerName: 'NVIDIA', Action: 'SELL', Price: 455.21, Reason: '动量轮动 Exit', PnL: 2306.90, Snapshot: { holdings: ['GOOGL (45%)', 'AMZN (30%)', 'Cash (25%)'], names: { GOOGL: 'Alphabet', AMZN: 'Amazon' } } },
+  { Date: '2023-09-05', Ticker: 'AMZN', TickerName: 'Amazon', Action: 'BUY', Price: 138.12, Reason: '动量轮动 Entry', PnL: null, Snapshot: { holdings: ['GOOGL (45%)', 'AMZN (30%)', 'Cash (25%)'], names: { GOOGL: 'Alphabet', AMZN: 'Amazon' } } },
+]
+
+export const mockRebalanceLogs: Record<string, any>[] = [
+  { Date: '2023-01-31', PortfolioValue: 101200, Selected: ['AAPL', 'MSFT'], PrevHoldings: [], Exited: [], Prices: { AAPL: 135.40, MSFT: 248.30 }, Weights: { AAPL: '55%', MSFT: '45%' }, WeightNames: { AAPL: 'Apple', MSFT: 'Microsoft' }, Names: { AAPL: 'Apple', MSFT: 'Microsoft' } },
+  { Date: '2023-02-28', PortfolioValue: 103800, Selected: ['AAPL', 'NVDA'], PrevHoldings: ['AAPL', 'MSFT'], Exited: ['MSFT'], Prices: { AAPL: 140.20, NVDA: 235.80 }, Weights: { AAPL: '50%', NVDA: '50%' }, WeightNames: { AAPL: 'Apple', NVDA: 'NVIDIA' }, Names: { AAPL: 'Apple', NVDA: 'NVIDIA' }, CashWeight: '0%' },
+  { Date: '2023-03-31', PortfolioValue: 102100, Selected: ['NVDA', 'GOOGL'], PrevHoldings: ['AAPL', 'NVDA'], Exited: ['AAPL'], Prices: { NVDA: 245.60, GOOGL: 118.90 }, Weights: { NVDA: '55%', GOOGL: '45%' }, WeightNames: { NVDA: 'NVIDIA', GOOGL: 'Alphabet' }, Names: { NVDA: 'NVIDIA', GOOGL: 'Alphabet' }, CashWeight: '0%' },
+  { Date: '2023-04-30', PortfolioValue: 105600, Selected: ['NVDA', 'GOOGL', 'AMZN'], PrevHoldings: ['NVDA', 'GOOGL'], Exited: [], Prices: { NVDA: 260.40, GOOGL: 122.50, AMZN: 128.30 }, Weights: { NVDA: '40%', GOOGL: '30%', AMZN: '30%' }, WeightNames: { NVDA: 'NVIDIA', GOOGL: 'Alphabet', AMZN: 'Amazon' }, Names: { NVDA: 'NVIDIA', GOOGL: 'Alphabet', AMZN: 'Amazon' }, CashWeight: '0%' },
+  { Date: '2023-05-31', PortfolioValue: 107200, Selected: ['NVDA', 'AMZN'], PrevHoldings: ['NVDA', 'GOOGL', 'AMZN'], Exited: ['GOOGL'], Prices: { NVDA: 285.10, AMZN: 132.80 }, Weights: { NVDA: '55%', AMZN: '45%' }, WeightNames: { NVDA: 'NVIDIA', AMZN: 'Amazon' }, Names: { NVDA: 'NVIDIA', AMZN: 'Amazon' }, CashWeight: '0%' },
+]
