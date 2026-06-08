@@ -1,5 +1,4 @@
-import { useState, useMemo } from 'react'
-import { BacktestChart } from '@/components/BacktestChart'
+import { useState, useMemo, lazy, Suspense } from 'react'
 import { MetricsGrid } from '@/components/MetricsGrid'
 import { TradeLogsTable } from '@/components/TradeLogsTable'
 import { RebalanceLogsTable } from '@/components/RebalanceLogsTable'
@@ -16,6 +15,12 @@ import {
 } from '@/mock/demoData'
 import { cn } from '@/lib/utils'
 import { Play, BarChart3, TrendingUp, Activity } from 'lucide-react'
+
+const BacktestChart = lazy(() => import('@/components/BacktestChart').then(m => ({ default: m.BacktestChart })))
+const DataHealthPage = lazy(() => import('@/components/DataHealthPage').then(m => ({ default: m.DataHealthPage })))
+const ExperimentsPage = lazy(() => import('@/components/ExperimentsPage').then(m => ({ default: m.ExperimentsPage })))
+const OptimizerTasksPage = lazy(() => import('@/components/OptimizerTasksPage').then(m => ({ default: m.OptimizerTasksPage })))
+const SignalsPage = lazy(() => import('@/components/SignalsPage').then(m => ({ default: m.SignalsPage })))
 
 interface SafeWorkspaceProps {
   activeView?: string
@@ -40,15 +45,20 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
     { label: 'Return', value: mockBacktestMetrics.totalReturn, format: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, color: 'text-emerald-500' },
   ], [])
 
-  if (activeView === 'screener' || activeView === 'signals' || activeView === 'settings') {
+  if (activeView === 'health') return <Suspense fallback={null}><DataHealthPage /></Suspense>
+  if (activeView === 'experiments') return <Suspense fallback={null}><ExperimentsPage /></Suspense>
+  if (activeView === 'optimizer-tasks') return <Suspense fallback={null}><OptimizerTasksPage /></Suspense>
+  if (activeView === 'signals') return <Suspense fallback={null}><SignalsPage /></Suspense>
+
+  if (activeView === 'screener' || activeView === 'settings') {
     return (
       <div className="flex h-full items-center justify-center p-8">
         <div className="text-center space-y-3">
           <div className="text-4xl opacity-20">
-            {activeView === 'screener' ? '📈' : activeView === 'signals' ? '📋' : '⚙️'}
+            {activeView === 'screener' ? '📈' : '⚙️'}
           </div>
           <p className="text-sm text-muted-foreground">
-            {activeView === 'screener' ? '筛选器页面开发中...' : activeView === 'signals' ? '信号页面开发中...' : '设置页面开发中...'}
+            {activeView === 'screener' ? '筛选器页面开发中...' : '设置页面开发中...'}
           </p>
         </div>
       </div>
@@ -76,8 +86,8 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
       </div>
 
       {/* Chart area */}
-      <Card className="mb-4 border-border/50 bg-card/50 overflow-hidden">
-        <CardHeader className="py-3 px-4 border-b border-border/50 bg-secondary/10">
+      <Card className="mb-4 overflow-hidden">
+        <CardHeader className="border-b border-border py-3 px-4">
           <div className="flex justify-between items-center">
             <div>
               <CardTitle className="text-sm font-semibold">
@@ -91,7 +101,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
               <Button
                 size="sm"
                 variant={chartView === 'equity' ? 'secondary' : 'outline'}
-                className={cn('h-7 text-xs', chartView === 'equity' ? 'bg-primary text-primary-foreground border border-primary/40' : 'bg-background/70')}
+                className={cn('h-7 text-xs', chartView === 'equity' && 'bg-primary text-primary-foreground')}
                 onClick={() => setChartView('equity')}
               >
                 <TrendingUp className="h-3 w-3 mr-1" />
@@ -100,7 +110,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
               <Button
                 size="sm"
                 variant={chartView === 'drawdown' ? 'secondary' : 'outline'}
-                className={cn('h-7 text-xs', chartView === 'drawdown' ? 'bg-destructive text-destructive-foreground border border-destructive/40' : 'bg-background/70')}
+                className={cn('h-7 text-xs', chartView === 'drawdown' && 'bg-destructive text-destructive-foreground')}
                 onClick={() => setChartView('drawdown')}
               >
                 Drawdown
@@ -112,13 +122,15 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
           {loading ? (
             <ChartSkeleton />
           ) : (
-            <div className="w-full h-[400px]">
-              <BacktestChart
-                data={chartView === 'equity' ? mockEquityCurve : mockDrawdownCurve}
-                onHoverTime={(time) => setHoveredDate(time)}
-                colors={{ backgroundColor: 'transparent' }}
-              />
-            </div>
+            <Suspense fallback={<ChartSkeleton />}>
+              <div className="w-full h-[400px]">
+                <BacktestChart
+                  data={chartView === 'equity' ? mockEquityCurve : mockDrawdownCurve}
+                  onHoverTime={(time: string | null) => setHoveredDate(time)}
+                  colors={{ backgroundColor: 'transparent' }}
+                />
+              </div>
+            </Suspense>
           )}
         </CardContent>
       </Card>
@@ -133,9 +145,9 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
             key={tab}
             onClick={() => setBottomTab(tab)}
             className={cn(
-              'rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
+              'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
               bottomTab === tab
-                ? 'bg-primary/15 text-primary'
+                ? 'bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
@@ -145,14 +157,14 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
       </div>
 
       {/* Bottom content */}
-      <Card className="border-border/50 bg-card/50">
+      <Card>
         <CardContent className="p-0">
           {bottomTab === 'Metrics' && (
             <div className="p-6">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                 {metrics.map((m) => (
                   <div key={m.label} className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60">{m.label}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.label}</span>
                     <span className={cn('text-2xl font-bold tabular-nums', m.color)}>
                       {m.format(m.value)}
                     </span>

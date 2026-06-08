@@ -11,13 +11,15 @@ interface AssetDetailDialogProps {
   onOpenChange: (open: boolean) => void
   dateRange?: DateRange
   fetchData?: (symbol: string, lookback: number) => Promise<any>
+  market?: string
 }
 
-export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetchData }: AssetDetailDialogProps) {
+export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetchData, market }: AssetDetailDialogProps) {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const missingDataSource = open && !!ticker && !fetchData
+  const currencySymbol = market === 'CN' ? '¥' : '$'
 
   const lookback = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return 252
@@ -58,7 +60,7 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
             {data && (
                 <div className="flex items-center gap-3">
                   <span className={`text-xl font-mono font-medium ${data.change_percent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      ${data.current_price?.toFixed(2)}
+                      {currencySymbol}{data.current_price?.toFixed(2)}
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded font-mono font-medium ${data.change_percent >= 0 ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
                       {data.change_percent > 0 ? '+' : ''}{data.change_percent?.toFixed(2)}%

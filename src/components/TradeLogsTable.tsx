@@ -49,6 +49,20 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
     })
   }, [])
 
+  const badgeMap = useMemo(() => {
+    const map = new Map<string, { text: string; style: string }>()
+    for (const log of logs) {
+      const reason = log.Reason || ''
+      let badgeText = reason
+      let badgeStyle = 'text-muted-foreground/50 border-border/50'
+      if (badgeText.includes('唐奇安突破') || badgeText.includes('Breakout') || badgeText.includes('Entry')) { badgeText = '突破建仓'; badgeStyle = 'text-emerald-500/80 border-emerald-500/30' }
+      else if (badgeText.includes('唐奇安离场') || badgeText.includes('Exit') || badgeText.includes('Stop')) { badgeText = '离场止盈/损'; badgeStyle = 'text-rose-500/80 border-rose-500/30' }
+      else if (badgeText.includes('End of Period')) { badgeText = '周期平仓'; badgeStyle = 'text-blue-500/80 border-blue-500/30' }
+      map.set(reason, { text: badgeText, style: badgeStyle })
+    }
+    return map
+  }, [logs])
+
   const filteredLogs = useMemo(() => {
     let result = logs.filter((log) => {
       if (logFilter) {
@@ -106,11 +120,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
             const isCollapsed = collapsedDates.has(log.Date)
             const isHighlighted = highlightDate === log.Date
 
-            let badgeText = log.Reason || ''
-            let badgeStyle = 'text-muted-foreground/50 border-border/50'
-            if (badgeText.includes('唐奇安突破') || badgeText.includes('Breakout') || badgeText.includes('Entry')) { badgeText = '突破建仓'; badgeStyle = 'text-emerald-500/80 border-emerald-500/30' }
-            else if (badgeText.includes('唐奇安离场') || badgeText.includes('Exit') || badgeText.includes('Stop')) { badgeText = '离场止盈/损'; badgeStyle = 'text-rose-500/80 border-rose-500/30' }
-            else if (badgeText.includes('End of Period')) { badgeText = '周期平仓'; badgeStyle = 'text-blue-500/80 border-blue-500/30' }
+            const badgeInfo = badgeMap.get(log.Reason || '') || { text: log.Reason || '', style: 'text-muted-foreground/50 border-border/50' }
 
             return (
               <Fragment key={`${i}-group`}>
@@ -171,7 +181,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                       {log.Price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="py-2.5 px-10 text-center">
-                      <span className={cn("inline-flex px-2 py-0.5 rounded-[4px] text-[9px] font-black border uppercase tracking-[0.05em]", badgeStyle)}>{badgeText}</span>
+                      <span className={cn("inline-flex px-2 py-0.5 rounded-[4px] text-[9px] font-black border uppercase tracking-[0.05em]", badgeInfo.style)}>{badgeInfo.text}</span>
                     </TableCell>
                     <TableCell className={cn(
                       "text-right font-mono text-[12px] py-2.5 tabular-nums transition-all tracking-tighter",

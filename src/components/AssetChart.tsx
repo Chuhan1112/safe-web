@@ -55,6 +55,7 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
   const isDark = useIsDark(theme)
   const isDarkRef = useRef(isDark)
   const seriesRefs = useRef<Map<string, ReturnType<IChartApi['addSeries']>>>(new Map())
+  const prevDataRef = useRef(data)
 
   useEffect(() => { isDarkRef.current = isDark }, [isDark])
 
@@ -66,16 +67,24 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
 
   useEffect(() => {
     if (!chartContainerRef.current) return
+    let resizeRaf: number | null = null
     const resizeObserver = new ResizeObserver((entries) => {
       if (entries.length === 0 || !entries[0].contentRect) return
       const { width, height } = entries[0].contentRect
       if (width > 0) {
-        setDimensions({ width, height: height || 400 })
-        if (chartRef.current) chartRef.current.applyOptions({ width, height: height || 400 })
+        if (resizeRaf !== null) cancelAnimationFrame(resizeRaf)
+        resizeRaf = requestAnimationFrame(() => {
+          setDimensions({ width, height: height || 400 })
+          if (chartRef.current) chartRef.current.applyOptions({ width, height: height || 400 })
+          resizeRaf = null
+        })
       }
     })
     resizeObserver.observe(chartContainerRef.current)
-    return () => resizeObserver.disconnect()
+    return () => {
+      if (resizeRaf !== null) cancelAnimationFrame(resizeRaf)
+      resizeObserver.disconnect()
+    }
   }, [])
 
   useEffect(() => {
@@ -91,6 +100,8 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
 
   useEffect(() => {
     if (dimensions.width === 0 || !chartContainerRef.current || !data || data.length === 0) return
+    if (data === prevDataRef.current) return
+    prevDataRef.current = data
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null }
 
     try {

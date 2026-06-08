@@ -8,6 +8,7 @@ import {
 } from '@/lib/privateOverlay'
 import type { ComponentType } from 'react'
 import type { PrivateOverlayMeta } from '@/types/privateOverlay'
+import { MarketProvider } from '@/contexts/MarketContext'
 
 const defaultPrivateMeta: Required<PrivateOverlayMeta> = {
   label: 'Local Overlay',
@@ -83,6 +84,7 @@ function App() {
   const isPrivateView = activeView === 'private' && canOpenPrivate
 
   return (
+    <MarketProvider>
     <div className="flex h-screen overflow-hidden trading-shell bg-background text-foreground">
       <Sidebar
         activeView={activeView}
@@ -109,6 +111,7 @@ function App() {
         )}
       </main>
     </div>
+    </MarketProvider>
   )
 }
 

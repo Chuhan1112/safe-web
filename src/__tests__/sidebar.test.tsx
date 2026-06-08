@@ -8,6 +8,13 @@ vi.mock("lucide-react", () => ({
   Settings: () => <span>Settings</span>,
   Moon: () => <span>Moon</span>,
   Sun: () => <span>Sun</span>,
+  HeartPulse: () => <span>HeartPulse</span>,
+  FlaskConical: () => <span>FlaskConical</span>,
+  ListTodo: () => <span>ListTodo</span>,
+}))
+
+vi.mock("@/contexts/MarketContext", () => ({
+  useMarket: () => ({ market: "US", setMarket: vi.fn() }),
 }))
 
 import { Sidebar } from "@/components/Sidebar"
@@ -37,6 +44,6 @@ describe("Sidebar", () => {
     const html = renderToStaticMarkup(
       <Sidebar {...defaultProps} activeView="screener" />,
     )
-    expect(html).toContain("bg-primary/15")
+    expect(html).toContain("bg-primary/10")
   })
 })

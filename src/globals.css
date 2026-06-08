@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&family=Outfit:wght@400;600;700;800;900&family=Sora:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -34,7 +34,7 @@
     --input: 214 26% 84%;
     --ring: 186 92% 36%;
 
-    --radius: 0.7rem;
+    --radius: 0.5rem;
   }
 
   .dark {
@@ -75,8 +75,10 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-family: 'Geist', system-ui, sans-serif;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1,
@@ -85,7 +87,8 @@
   h4,
   h5,
   h6 {
-    font-family: 'Outfit', 'Sora', sans-serif;
+    font-family: 'Geist', system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 
   code,
@@ -100,107 +103,46 @@
     position: relative;
     isolation: isolate;
   }
-
-  /* 基础光晕背景 */
-  .trading-shell::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -3;
-    background:
-      radial-gradient(1200px 800px at -10% -20%, hsl(var(--primary) / 0.16), transparent 65%),
-      radial-gradient(1000px 700px at 115% 0%, hsl(var(--accent) / 0.12), transparent 62%),
-      radial-gradient(800px 600px at 55% 120%, hsl(var(--primary) / 0.08), transparent 68%),
-      hsl(var(--background));
-    pointer-events: none;
-  }
-
-  /* 赛博网格与渐变遮罩 */
-  .trading-shell::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -2;
-    background-image:
-      linear-gradient(to right, hsl(var(--foreground) / 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
-    pointer-events: none;
-  }
-
-  .rdp {
-    --rdp-day-width: 2.25rem;
-    --rdp-day-height: 2.25rem;
-    --rdp-day_button-width: 2.25rem;
-    --rdp-day_button-height: 2.25rem;
-    --rdp-day_button-border-radius: 0.95rem;
-    --rdp-day_button-border: 1px solid transparent;
-    --rdp-nav_button-width: 2rem;
-    --rdp-nav_button-height: 2rem;
-    --rdp-nav-height: 3.25rem;
-    --rdp-dropdown-gap: 0.625rem;
-    --rdp-months-gap: 2.75rem;
-    --rdp-accent-color: hsl(var(--primary));
-    --rdp-accent-background-color: hsl(var(--primary) / 0.10);
-    --rdp-range_middle-background-color: hsl(var(--primary) / 0.10);
-    --rdp-range_start-date-background-color: hsl(var(--primary));
-    --rdp-range_end-date-background-color: hsl(var(--primary));
-    --rdp-selected-color: hsl(var(--primary-foreground));
-    --rdp-today-color: hsl(var(--foreground));
-    --rdp-outside-opacity: 0.5;
-    --rdp-disabled-opacity: 0.5;
-    --rdp-weekday-padding: 0 0 0.75rem 0;
-    --rdp-weekday-opacity: 1;
-    margin: 0;
-  }
 }
 
-/* 极致全局噪点层 (Film Grain) */
-body::after {
-  content: "";
-  position: fixed;
-  inset: -100vh -100vw;
-  width: 300vw;
-  height: 300vh;
-  z-index: 9999;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.02;
-  /* 极轻微透明度，避免干扰阅读 */
-  mix-blend-mode: overlay;
-  pointer-events: none;
-  animation: noise 0.5s infinite steps(2);
+.rdp-root {
+  --rdp-day-width: 2.25rem;
+  --rdp-day-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-border-radius: 0.5rem;
+  --rdp-day_button-border: 1px solid transparent;
+  --rdp-nav_button-width: 2rem;
+  --rdp-nav_button-height: 2rem;
+  --rdp-nav-height: 3.25rem;
+  --rdp-dropdown-gap: 0.625rem;
+  --rdp-months-gap: 2.75rem;
+  --rdp-accent-color: hsl(var(--primary));
+  --rdp-accent-background-color: hsl(var(--primary) / 0.10);
+  --rdp-range_middle-background-color: hsl(var(--primary) / 0.10);
+  --rdp-range_middle-color: hsl(var(--foreground));
+  --rdp-range_start-date-background-color: hsl(var(--primary));
+  --rdp-range_end-date-background-color: hsl(var(--primary));
+  --rdp-selected-color: hsl(var(--primary-foreground));
+  --rdp-today-color: hsl(var(--foreground));
+  --rdp-outside-opacity: 0.4;
+  --rdp-disabled-opacity: 0.35;
+  --rdp-weekday-padding: 0 0 0.75rem 0;
+  --rdp-weekday-opacity: 1;
+  margin: 0;
 }
 
-@keyframes noise {
-
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-
-  25% {
-    transform: translate(1%, 1%);
-  }
-
-  50% {
-    transform: translate(-1%, -1%);
-  }
-
-  75% {
-    transform: translate(-1%, 1%);
-  }
+.dark .rdp-root {
+  --rdp-accent-background-color: hsl(var(--primary) / 0.20);
+  --rdp-range_middle-background-color: hsl(var(--primary) / 0.20);
+  --rdp-range_middle-color: hsl(var(--foreground));
 }
 
 .liquid-glass-container {
   display: inline-flex;
-  background: rgba(255, 255, 255, 0.05); /* Ultra-transparent "Cicada Wing" Glass */
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
-    0 15px 35px -8px rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   padding: 4px;
 }
@@ -216,45 +158,40 @@ body::after {
 
 .glass-pill-v7 {
   position: absolute;
-  background: rgba(255, 255, 255, 1); 
+  background: hsl(var(--primary));
   border-radius: 8px;
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 
-    0 4px 12px -2px rgba(0, 0, 0, 0.1),
-    inset 0 1px 1px 0px rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .nav-item-v7 {
   position: relative;
   z-index: 20;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+  transition: color 0.15s ease-out;
 }
 
 .nav-item-v7.active {
-  color: #1a1a1a; /* Contrast dark on white pill */
+  color: hsl(var(--primary));
 }
 
 .nav-item-v7:hover:not(.active) {
-  color: rgba(255, 255, 255, 0.9);
+  color: hsl(var(--foreground));
 }
 
 .light .liquid-glass-container {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(15, 23, 42, 0.08);
-  box-shadow:
-    0 18px 38px -16px rgba(15, 23, 42, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .light .nav-item-v7 {
-  color: rgba(15, 23, 42, 0.48);
+  color: hsl(var(--muted-foreground));
 }
 
 .light .nav-item-v7:hover:not(.active) {
-  color: rgba(15, 23, 42, 0.82);
+  color: hsl(var(--foreground));
 }
 
 .liquid-refraction-overlay {
@@ -263,7 +200,7 @@ body::after {
   z-index: 5;
   pointer-events: none;
   border-radius: inherit;
-  background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.05), transparent 80%);
+  background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), hsl(var(--primary) / 0.05), transparent 80%);
 }
 
 @layer utilities {
@@ -320,3 +257,4 @@ body::after {
     transform: translateY(0);
   }
 }
+

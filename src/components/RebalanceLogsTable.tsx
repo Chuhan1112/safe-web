@@ -11,14 +11,16 @@ interface RebalanceLogsTableProps {
   handleTickerClick: (ticker: string) => void
   comparePalette: string[]
   highlightDate?: string | null
+  market?: string
 }
 
 function displayName(ticker: string, names: Record<string, string>): string {
   return names[ticker] || ticker
 }
 
-export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick, comparePalette, highlightDate }: RebalanceLogsTableProps) => {
+export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick, comparePalette, highlightDate, market }: RebalanceLogsTableProps) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const currencySymbol = market === 'CN' ? '¥' : '$'
 
   const toggleExpand = useCallback((date: string) => {
     setExpandedRows((prev) => {
@@ -72,7 +74,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                   </span>
                 </TableCell>
                 <TableCell className="font-mono text-sm font-semibold py-3 text-right">
-                  ${log.PortfolioValue?.toLocaleString?.(undefined, { maximumFractionDigits: 0 })}
+                  {currencySymbol}{log.PortfolioValue?.toLocaleString?.(undefined, { maximumFractionDigits: 0 })}
                 </TableCell>
                 <TableCell className="py-3">
                   {(() => {
@@ -99,7 +101,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                     <TickerLink ticker={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
-                                    {log.Prices?.[ticker] != null ? `$${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
+                                    {log.Prices?.[ticker] != null ? `${currencySymbol}${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
                                   </span>
                                 </span>
                               ))}
@@ -122,7 +124,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                     <TickerLink ticker={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
-                                    {log.Prices?.[ticker] != null ? `$${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
+                                    {log.Prices?.[ticker] != null ? `${currencySymbol}${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
                                   </span>
                                 </span>
                               ))}
@@ -147,7 +149,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                     <TickerLink ticker={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-red-500/60 tabular-nums">
-                                    {log.ExitPrices?.[ticker] != null ? `$${Number(log.ExitPrices[ticker]).toFixed(2)}` : '--'}
+                                    {log.ExitPrices?.[ticker] != null ? `${currencySymbol}${Number(log.ExitPrices[ticker]).toFixed(2)}` : '--'}
                                   </span>
                                 </span>
                               ))}
@@ -201,10 +203,10 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">操作明细</span>
                         <div className="mt-2 flex flex-col gap-1">
                           {(log.Exited || []).filter(Boolean).map((t: string) => (
-                            <span key={t} className="text-xs text-red-500/80">- SELL {displayName(t, log.Names || {})} @ ${log.ExitPrices?.[t]?.toFixed(2) ?? '--'}</span>
+                            <span key={t} className="text-xs text-red-500/80">- SELL {displayName(t, log.Names || {})} @ {currencySymbol}{log.ExitPrices?.[t]?.toFixed(2) ?? '--'}</span>
                           ))}
                           {(log.Selected || []).filter((t: string) => !(log.PrevHoldings || []).includes(t)).map((t: string) => (
-                            <span key={t} className="text-xs text-emerald-500/80">+ BUY {displayName(t, log.Names || {})} @ ${log.Prices?.[t]?.toFixed(2) ?? '--'}</span>
+                            <span key={t} className="text-xs text-emerald-500/80">+ BUY {displayName(t, log.Names || {})} @ {currencySymbol}{log.Prices?.[t]?.toFixed(2) ?? '--'}</span>
                           ))}
                         </div>
                       </div>

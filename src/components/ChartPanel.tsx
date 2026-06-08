@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { buildTradeMap, buildRebalanceMap, parseDateToTs } from '@/utils/chartHoverLogic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,7 @@ interface ChartPanelProps {
   t: ChartPanelT;
   loading: boolean;
   error: string | null;
+  market?: string;
 }
 
 
@@ -65,9 +66,19 @@ export const ChartPanel = React.memo(({
   comparePalette,
   t,
   loading,
-  error
+  error,
+  market
 }: ChartPanelProps) => {
-  const [hoveredTime, setHoveredTime] = useState<string | null>(null);
+  const [hoveredTime, setHoveredTimeRaw] = useState<string | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const setHoveredTime = useCallback((time: string | null) => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setHoveredTimeRaw(time);
+      rafRef.current = null;
+    });
+  }, []);
+  const currencySymbol = market === 'CN' ? '¥' : '$'
 
   const tradeMemo = useMemo(
     () => buildTradeMap(result?.trade_logs),
@@ -312,7 +323,7 @@ export const ChartPanel = React.memo(({
                           <Minus className="h-3 w-3" />
                         )}
                         <span className="font-bold tracking-tight">{row.name || row.ticker}</span>
-                        <span className="opacity-60">${Number.isFinite(row.price) ? row.price.toFixed(2) : '--'}</span>
+                        <span className="opacity-60">{currencySymbol}{Number.isFinite(row.price) ? row.price.toFixed(2) : '--'}</span>
                       </span>
                     ))}
                   </div>
