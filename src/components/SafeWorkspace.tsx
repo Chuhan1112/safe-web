@@ -21,6 +21,7 @@ const DataHealthPage = lazy(() => import('@/components/DataHealthPage').then(m =
 const ExperimentsPage = lazy(() => import('@/components/ExperimentsPage').then(m => ({ default: m.ExperimentsPage })))
 const OptimizerTasksPage = lazy(() => import('@/components/OptimizerTasksPage').then(m => ({ default: m.OptimizerTasksPage })))
 const SignalsPage = lazy(() => import('@/components/SignalsPage').then(m => ({ default: m.SignalsPage })))
+const ResearchPage = lazy(() => import('@/components/ResearchPage').then(m => ({ default: m.ResearchPage })))
 
 interface SafeWorkspaceProps {
   activeView?: string
@@ -47,18 +48,19 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
 
   if (activeView === 'health') return <Suspense fallback={null}><DataHealthPage /></Suspense>
   if (activeView === 'experiments') return <Suspense fallback={null}><ExperimentsPage /></Suspense>
-  if (activeView === 'optimizer-tasks') return <Suspense fallback={null}><OptimizerTasksPage /></Suspense>
+  if (activeView === 'optimizer') return <Suspense fallback={null}><OptimizerTasksPage /></Suspense>
   if (activeView === 'signals') return <Suspense fallback={null}><SignalsPage /></Suspense>
+  if (activeView === 'research') return <Suspense fallback={null}><ResearchPage /></Suspense>
 
-  if (activeView === 'screener' || activeView === 'settings') {
+  if (activeView === 'screener' || activeView === 'scorer' || activeView === 'data') {
     return (
       <div className="flex h-full items-center justify-center p-8">
         <div className="text-center space-y-3">
           <div className="text-4xl opacity-20">
-            {activeView === 'screener' ? '📈' : '⚙️'}
+            {activeView === 'screener' ? '📈' : activeView === 'scorer' ? '⚡' : '💾'}
           </div>
           <p className="text-sm text-muted-foreground">
-            {activeView === 'screener' ? '筛选器页面开发中...' : '设置页面开发中...'}
+            {activeView === 'screener' ? '筛选器页面开发中...' : activeView === 'scorer' ? '打分页面开发中...' : '数据管理开发中...'}
           </p>
         </div>
       </div>

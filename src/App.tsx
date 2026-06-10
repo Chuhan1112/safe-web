@@ -94,6 +94,13 @@ function App() {
         }}
         theme={theme}
         onThemeToggle={() => setTheme((v) => (v === 'dark' ? 'light' : 'dark'))}
+        canOpenPrivate={!!canOpenPrivate}
+        onNavigateToPrivate={(tab) => {
+          if (canOpenPrivate) {
+            window.dispatchEvent(new CustomEvent('cortex:navigate', { detail: { tab } }))
+          }
+          setActiveView('private')
+        }}
       />
 
       <main className="flex-1 overflow-y-auto">

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 import "react-day-picker/style.css"
 
@@ -31,12 +32,12 @@ function Calendar({
                 button_previous: cn(
                     "rdp-button_previous absolute left-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
                     buttonVariants({ variant: "outline" }),
-                    "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10"
+                    "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
                 ),
                 button_next: cn(
                     "rdp-button_next absolute right-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
                     buttonVariants({ variant: "outline" }),
-                    "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10"
+                    "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
                 ),
                 month_grid: "rdp-month_grid w-full border-collapse",
                 weekdays: "rdp-weekdays",
@@ -61,6 +62,14 @@ function Calendar({
                 range_start: "rdp-range_start [&>.rdp-day_button]:bg-primary [&>.rdp-day_button]:text-primary-foreground",
                 hidden: "rdp-hidden invisible",
                 ...classNames,
+            }}
+            components={{
+                Chevron: ({ orientation, ...rest }) => {
+                    if (orientation === "left") {
+                        return <ChevronLeft className="h-4 w-4" {...rest} />
+                    }
+                    return <ChevronRight className="h-4 w-4" {...rest} />
+                },
             }}
             {...props}
         />
