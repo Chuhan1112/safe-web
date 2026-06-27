@@ -1,7 +1,8 @@
 // src/components/Sidebar.tsx
 import { cn } from '@/lib/utils'
-import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search } from 'lucide-react'
+import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
+import { useState, useEffect } from 'react'
 
 interface SidebarProps {
   activeView: string
@@ -45,6 +46,42 @@ function NavButton({ item, isActive, onClick }: { item: { id: string; icon: Reac
         <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
       )}
     </button>
+  )
+}
+
+function DataStatusDot() {
+  const { market } = useMarket()
+  const [status, setStatus] = useState<'fresh' | 'stale' | 'unknown'>('unknown')
+
+  useEffect(() => {
+    // 走真实健康汇总端点（含 market），按 healthy/stale/missing 计数判定新鲜度。
+    const controller = new AbortController()
+    fetch(`http://127.0.0.1:8000/data/health/summary?market=${market}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data || !data.total) {
+          setStatus('unknown')
+          return
+        }
+        const bad = (data.stale || 0) + (data.missing || 0) + (data.anomaly || 0)
+        setStatus(bad === 0 ? 'fresh' : 'stale')
+      })
+      .catch(() => setStatus('unknown'))
+    return () => controller.abort()
+  }, [market])
+
+  return (
+    <div className="flex flex-col items-center gap-0.5" title={
+      status === 'fresh' ? '数据已最新' : status === 'stale' ? '数据已过期' : '数据状态未知'
+    }>
+      {status === 'fresh' ? (
+        <Wifi className="h-3 w-3 text-emerald-400" />
+      ) : status === 'stale' ? (
+        <WifiOff className="h-3 w-3 text-amber-400" />
+      ) : (
+        <Wifi className="h-3 w-3 text-muted-foreground/40" />
+      )}
+    </div>
   )
 }
 
@@ -114,6 +151,10 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
 
     {/* 市场切换 */}
     <SidebarMarketToggle />
+
+    {/* 数据状态 */}
+    <DataStatusDot />
+
     <button
       onClick={onThemeToggle}
       className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

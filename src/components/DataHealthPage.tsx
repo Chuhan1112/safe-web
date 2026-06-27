@@ -108,6 +108,11 @@ export const DataHealthPage = memo(function DataHealthPage() {
     }
   }, [market, cachedFetch])
 
+  // 切市场时清空旧选中（可能属于不同市场）
+  useEffect(() => {
+    setSelectedTicker(null)
+  }, [market])
+
   useEffect(() => {
     fetchData()
   }, [fetchData])

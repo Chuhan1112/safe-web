@@ -4,3 +4,5 @@ dist
 .npm-cache
 src/private
 .DS_Store
+data/
+logs/

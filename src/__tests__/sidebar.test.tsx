@@ -13,6 +13,8 @@ vi.mock("lucide-react", () => ({
   Search: () => <span>Search</span>,
   Moon: () => <span>Moon</span>,
   Sun: () => <span>Sun</span>,
+  Wifi: () => <span>Wifi</span>,
+  WifiOff: () => <span>WifiOff</span>,
 }))
 
 vi.mock("@/contexts/MarketContext", () => ({
@@ -43,16 +45,18 @@ describe("Sidebar", () => {
 
   it("hides private items when canOpenPrivate is false", () => {
     const html = renderToStaticMarkup(<Sidebar {...defaultProps} canOpenPrivate={false} />)
-    expect(html).not.toContain("筛选")
-    expect(html).not.toContain("打分")
-    expect(html).not.toContain("数据")
+    // 用 title="筛选" / title="打分" / title="数据" 做精确匹配，
+    // 避免 DataStatusDot 的 title="数据状态未知" 误匹配
+    expect(html).not.toContain('title="筛选"')
+    expect(html).not.toContain('title="打分"')
+    expect(html).not.toContain('title="数据"')
   })
 
   it("shows private items when canOpenPrivate is true", () => {
     const html = renderToStaticMarkup(<Sidebar {...defaultProps} canOpenPrivate={true} />)
-    expect(html).toContain("筛选")
-    expect(html).toContain("打分")
-    expect(html).toContain("数据")
+    expect(html).toContain('title="筛选"')
+    expect(html).toContain('title="打分"')
+    expect(html).toContain('title="数据"')
   })
 
   it("renders theme toggle button", () => {

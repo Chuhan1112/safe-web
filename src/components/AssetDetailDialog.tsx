@@ -10,7 +10,7 @@ interface AssetDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   dateRange?: DateRange
-  fetchData?: (symbol: string, lookback: number) => Promise<any>
+  fetchData?: (symbol: string, lookback: number, market?: string) => Promise<any>
   market?: string
 }
 
@@ -20,6 +20,18 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
   const [error, setError] = useState<string | null>(null)
   const missingDataSource = open && !!ticker && !fetchData
   const currencySymbol = market === 'CN' ? '¥' : '$'
+  const tvSymbol = useMemo(() => {
+    if (!ticker) return ''
+    if (market === 'CN') {
+      // 去除 .SS/.SZ 后缀，TradingView 用 SHA:600519 或 SZSE:000001 等
+      const clean = ticker.replace(/\.(SS|SZ)$/, '')
+      if (ticker.endsWith('.SS')) return `SHA:${clean}`
+      if (ticker.endsWith('.SZ')) return `SZSE:${clean}`
+      return ticker
+    }
+    return ticker
+  }, [ticker, market])
+  const tradingViewUrl = tvSymbol ? `https://www.tradingview.com/symbols/${tvSymbol}/` : '#'
 
   const lookback = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return 252
@@ -32,14 +44,14 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
     setLoading(true)
     setError(null)
     try {
-      const res = await fetchData(symbol, lookback)
+      const res = await fetchData(symbol, lookback, market)
       setData(res)
     } catch (err: any) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [lookback, fetchData])
+  }, [lookback, fetchData, market])
 
   useEffect(() => {
     if (open && ticker) {
@@ -68,7 +80,7 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
                 </div>
             )}
             <a
-                href={`https://www.tradingview.com/symbols/${ticker}/`}
+                href={tradingViewUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="ml-auto mr-8 text-muted-foreground hover:text-primary transition-colors p-2 hover:bg-muted rounded-md"

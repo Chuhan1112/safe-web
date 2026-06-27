@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react'
+import { useState, useMemo, lazy, Suspense, useEffect } from 'react'
 import { MetricsGrid } from '@/components/MetricsGrid'
 import { TradeLogsTable } from '@/components/TradeLogsTable'
 import { RebalanceLogsTable } from '@/components/RebalanceLogsTable'
@@ -15,6 +15,8 @@ import {
 } from '@/mock/demoData'
 import { cn } from '@/lib/utils'
 import { Play, BarChart3, TrendingUp, Activity } from 'lucide-react'
+import { BacktestDiagnostics } from '@/components/BacktestDiagnostics'
+import { useMarket } from '@/contexts/MarketContext'
 
 const BacktestChart = lazy(() => import('@/components/BacktestChart').then(m => ({ default: m.BacktestChart })))
 const DataHealthPage = lazy(() => import('@/components/DataHealthPage').then(m => ({ default: m.DataHealthPage })))
@@ -32,10 +34,17 @@ interface SafeWorkspaceProps {
 const bottomTabs = ['Metrics', 'Trades', 'Rebalance'] as const
 
 export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
+  const { market } = useMarket()
   const [chartView, setChartView] = useState<'equity' | 'drawdown'>('equity')
   const [bottomTab, setBottomTab] = useState<(typeof bottomTabs)[number]>('Metrics')
   const [loading, setLoading] = useState(false)
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)
+
+  // 切市场时清空本地状态（当前展示 mock 数据，但保持一致性）
+  useEffect(() => {
+    setLoading(false)
+    setHoveredDate(null)
+  }, [market])
 
   const metrics = useMemo(() => [
     { label: 'CAGR', value: mockBacktestMetrics.cagr, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-emerald-500' },
@@ -78,7 +87,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
           </Badge>
           <Badge variant="outline" className="gap-1.5">
             <Activity className="h-3 w-3" />
-            US
+            {market}
           </Badge>
         </div>
         <Button size="sm" className="gap-1.5" onClick={() => setLoading(true)}>
@@ -139,6 +148,16 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
 
       {/* Metrics grid */}
       <MetricsGrid metrics={metrics} className="mb-4" />
+
+      {/* Diagnostics */}
+      <div className="mb-4">
+        <BacktestDiagnostics metrics={{
+          totalReturn: mockBacktestMetrics.totalReturn,
+          cagr: mockBacktestMetrics.cagr,
+          sharpe: mockBacktestMetrics.sharpe,
+          totalTrades: mockBacktestMetrics.totalTrades,
+        }} />
+      </div>
 
       {/* Bottom tabs */}
       <div className="mb-3 flex gap-1">

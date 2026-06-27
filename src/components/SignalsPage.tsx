@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -69,6 +69,12 @@ export function SignalsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedSignal, setSelectedSignal] = useState<SignalItem | null>(null)
   const [drawerLoading, setDrawerLoading] = useState(false)
+
+  // 切市场时清空旧信号结果，避免跨市场脏数据展示
+  useEffect(() => {
+    setSignalsData(null)
+    setError(null)
+  }, [market])
 
   const fetchSignals = useCallback(async () => {
     setLoading(true)

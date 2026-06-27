@@ -31,7 +31,8 @@ export const ExperimentsPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    if (filterMarket) {
+    // 默认跟随全局市场；用户已手动选择(非空)则保留其选择
+    if (!filterMarket) {
       setFilterMarket(globalMarket)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
