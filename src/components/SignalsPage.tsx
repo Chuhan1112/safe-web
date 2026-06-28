@@ -86,10 +86,14 @@ export function SignalsPage() {
   const [selectedSignal, setSelectedSignal] = useState<SignalItem | null>(null)
   const [drawerLoading, setDrawerLoading] = useState(false)
 
-  // 切市场时清空旧信号结果，避免跨市场脏数据展示
+  // 切市场时清空旧信号结果 + 当前策略不在新市场列表时重置
   useEffect(() => {
     setSignalsData(null)
     setError(null)
+    const strategies = ALL_STRATEGIES[market] || ALL_STRATEGIES.US
+    if (!strategies.includes(strategyId)) {
+      setStrategyId(strategies[0])
+    }
   }, [market])
 
   const fetchSignals = useCallback(async () => {
