@@ -201,6 +201,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
               t={{ action: 'Action', symbol: 'Symbol', price: 'Price', reason: 'Reason' }}
               handleTickerClick={(t) => console.log('click', t)}
               highlightDate={hoveredDate}
+              market={market}
             />
           )}
           {bottomTab === 'Rebalance' && (
@@ -211,6 +212,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
               handleTickerClick={(t) => console.log('click', t)}
               comparePalette={['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']}
               highlightDate={hoveredDate}
+              market={market}
             />
           )}
         </CardContent>

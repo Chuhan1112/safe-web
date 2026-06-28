@@ -6,9 +6,11 @@ interface TickerLinkProps {
   onClick: (ticker: string) => void
   className?: string
   hideIcon?: boolean
+  /** 显示文本（如中文名），不传则显示 ticker 代码。点击始终传 ticker 代码 */
+  displayName?: string
 }
 
-export const TickerLink = ({ ticker, onClick, className, hideIcon }: TickerLinkProps) => (
+export const TickerLink = ({ ticker, onClick, className, hideIcon, displayName }: TickerLinkProps) => (
   <button
     onClick={(event) => {
       event.stopPropagation()
@@ -20,7 +22,7 @@ export const TickerLink = ({ ticker, onClick, className, hideIcon }: TickerLinkP
       className,
     )}
   >
-    {ticker}
+    {displayName || ticker}
     {!hideIcon && (
       <ExternalLink className="ml-1 h-2.5 w-2.5 opacity-0 group-hover/row:opacity-40 group-hover/row:hover:opacity-100 transition-opacity" />
     )}

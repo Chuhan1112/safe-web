@@ -12,13 +12,16 @@ interface TradeLogsTableProps {
   t: { action: string; symbol?: string; price?: string; reason: string }
   handleTickerClick: (ticker: string) => void
   highlightDate?: string | null
+  market?: string
 }
 
-export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, highlightDate }: TradeLogsTableProps) => {
+export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, highlightDate, market }: TradeLogsTableProps) => {
   const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({ key: '', direction: null })
   const [actionFilter, setActionFilter] = useState<Set<string>>(new Set())
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set())
   const tableRef = useRef<HTMLDivElement>(null)
+
+  const currencySymbol = market === 'CN' ? '¥' : '$'
 
   const handleSort = useCallback((key: string) => {
     setSort((prev) => {
@@ -88,9 +91,12 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
         if (typeof aVal === 'string') return sort.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
         return sort.direction === 'asc' ? aVal - bVal : bVal - aVal
       })
+    } else {
+      // 默认按日期降序（最新在前），不修改原数组
+      result = [...result].sort((a, b) => String(b.Date || '').localeCompare(String(a.Date || '')))
     }
 
-    return result.reverse()
+    return result
   }, [logs, logFilter, actionFilter, sort])
 
   useEffect(() => {
@@ -174,10 +180,10 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                       )}>{log.Action}</span>
                     </TableCell>
                     <TableCell className="py-2.5 align-middle">
-                      <TickerLink ticker={log.TickerName || log.Ticker} onClick={handleTickerClick} className="font-bold tracking-tight text-foreground/80 group-hover/row:text-primary transition-colors text-[13px] border-none bg-transparent hover:bg-transparent px-0" />
+                      <TickerLink ticker={log.Ticker} displayName={log.TickerName || log.Ticker} onClick={handleTickerClick} className="font-bold tracking-tight text-foreground/80 group-hover/row:text-primary transition-colors text-[13px] border-none bg-transparent hover:bg-transparent px-0" />
                     </TableCell>
                     <TableCell className="text-right font-mono text-[12px] font-bold py-2.5 tracking-tighter tabular-nums">
-                      <span className="text-muted-foreground/20 mr-1.5 font-normal">$</span>
+                      <span className="text-muted-foreground/20 mr-1.5 font-normal">{currencySymbol}</span>
                       {log.Price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="py-2.5 px-10 text-center">
@@ -189,7 +195,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                     )}>
                       {log.PnL && log.PnL !== 0 ? (
                         <span className="flex items-center justify-end">
-                          <span className="text-[10px] text-muted-foreground/20 mr-1.5 font-normal">$</span>
+                          <span className="text-[10px] text-muted-foreground/20 mr-1.5 font-normal">{currencySymbol}</span>
                           {Math.abs(log.PnL).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </span>
                       ) : (

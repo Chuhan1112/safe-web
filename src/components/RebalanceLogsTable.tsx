@@ -40,7 +40,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
       (log.Selected || []).join(',').toLowerCase().includes(needle) ||
       Object.values(log.Names || {}).join(',').toLowerCase().includes(needle)
     )
-  }).reverse()
+  }).sort((a, b) => String(b.Date || '').localeCompare(String(a.Date || '')))
 
   return (
     <Table>
@@ -98,7 +98,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                               {buys.map((ticker: string) => (
                                 <span key={ticker} className="inline-flex items-center gap-1.5 rounded-md border border-green-200/30 bg-green-500/5 px-2 py-0.5">
                                   <span className="text-[11px] font-bold tracking-tight uppercase">
-                                    <TickerLink ticker={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
+                                    <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
                                     {log.Prices?.[ticker] != null ? `${currencySymbol}${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
@@ -121,7 +121,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                 <span key={ticker} className="relative inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/80 px-2 py-0.5">
                                   <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full" style={{ backgroundColor: comparePalette[idx % comparePalette.length] }} />
                                   <span className="text-[11px] font-bold tracking-tight uppercase pl-2">
-                                    <TickerLink ticker={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
+                                    <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
                                     {log.Prices?.[ticker] != null ? `${currencySymbol}${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
@@ -146,7 +146,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                               {exitedTickers.map((ticker: string) => (
                                 <span key={`exit-${ticker}`} className="inline-flex items-center gap-1.5 rounded-md border border-red-200/30 bg-red-500/5 px-2 py-0.5 text-red-600/80">
                                   <span className="text-[11px] font-bold tracking-tight uppercase">
-                                    <TickerLink ticker={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
+                                    <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-red-500/60 tabular-nums">
                                     {log.ExitPrices?.[ticker] != null ? `${currencySymbol}${Number(log.ExitPrices[ticker]).toFixed(2)}` : '--'}
