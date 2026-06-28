@@ -86,6 +86,19 @@ export function SignalsPage() {
   const [selectedSignal, setSelectedSignal] = useState<SignalItem | null>(null)
   const [drawerLoading, setDrawerLoading] = useState(false)
 
+  // 动量排名仪表盘
+  const [rankingData, setRankingData] = useState<{ date: string; rankings: { rank: number; ticker: string; price: number | null; momentum: number | null; above_sma: boolean | null }[] } | null>(null)
+  const [rankingLoading, setRankingLoading] = useState(false)
+
+  const fetchRanking = useCallback(async () => {
+    setRankingLoading(true)
+    try {
+      const res = await fetch(`${API}/signals/momentum-ranking?market=${market}&top_n=20`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setRankingData(await res.json())
+    } catch { setRankingData(null) } finally { setRankingLoading(false) }
+  }, [market])
+
   // 切市场时清空旧信号结果 + 当前策略不在新市场列表时重置
   useEffect(() => {
     setSignalsData(null)
@@ -278,6 +291,52 @@ export function SignalsPage() {
         data={selectedSignal?.explanation ?? null}
         loading={drawerLoading}
       />
+
+      {/* 动量排名仪表盘 (Path A) */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium">
+              动量排名 {rankingData ? `— ${rankingData.date}` : ''}
+            </CardTitle>
+            <Button onClick={fetchRanking} disabled={rankingLoading} size="sm" variant="outline">
+              {rankingLoading ? '加载中...' : '刷新排名'}
+            </Button>
+          </div>
+        </CardHeader>
+        {rankingData && rankingData.rankings.length > 0 && (
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="py-2 px-3 text-left w-10">#</th>
+                    <th className="py-2 px-3 text-left">Ticker</th>
+                    <th className="py-2 px-3 text-right">Price</th>
+                    <th className="py-2 px-3 text-right">动量</th>
+                    <th className="py-2 px-3 text-center w-14">SMA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rankingData.rankings.map((r) => (
+                    <tr key={r.ticker} className="border-b hover:bg-muted/50">
+                      <td className="py-1.5 px-3 font-mono text-muted-foreground">{r.rank}</td>
+                      <td className="py-1.5 px-3 font-medium">{r.ticker}</td>
+                      <td className="py-1.5 px-3 text-right font-mono">{r.price?.toFixed(2) ?? '-'}</td>
+                      <td className={`py-1.5 px-3 text-right font-mono ${(r.momentum ?? 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {r.momentum != null ? (r.momentum * 100).toFixed(1) + '%' : '-'}
+                      </td>
+                      <td className="py-1.5 px-3 text-center">
+                        {r.above_sma === true ? <span className="text-green-600">▲</span> : r.above_sma === false ? <span className="text-red-400">▼</span> : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   )
 }
