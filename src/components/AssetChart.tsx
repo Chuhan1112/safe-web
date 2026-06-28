@@ -100,7 +100,7 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
 
   useEffect(() => {
     if (dimensions.width === 0 || !chartContainerRef.current || !data || data.length === 0) return
-    if (data === prevDataRef.current) return
+    if (data === prevDataRef.current && chartRef.current) return
     prevDataRef.current = data
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null }
 
