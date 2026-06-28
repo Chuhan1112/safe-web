@@ -38,6 +38,7 @@ interface SignalsResponse {
 
 const STRATEGIES = [
   'ADAPTIVE_MOMENTUM',
+  'MOMENTUM_CONFIRM',
   'ULTIMATE_COMBINED',
   'MOMENTUM',
   'MEAN_REVERSION',
