@@ -36,15 +36,30 @@ interface SignalsResponse {
   metadata: Record<string, unknown>
 }
 
-const STRATEGIES = [
-  'ADAPTIVE_MOMENTUM',
-  'MOMENTUM_CONFIRM',
-  'ULTIMATE_COMBINED',
-  'MOMENTUM',
-  'MEAN_REVERSION',
-  'COMMANDER',
-  'MACD_REVERSAL',
-]
+// 策略列表按市场过滤：部分策略只在特定市场有效
+const ALL_STRATEGIES: Record<string, string[]> = {
+  US: [
+    'ADAPTIVE_MOMENTUM',
+    'MOMENTUM_CONFIRM',
+    'ULTIMATE_COMBINED',
+    'MOMENTUM',
+    'COMMANDER',
+    'PRACTICAL_ATR',
+    'PRACTICAL_DONCHIAN',
+    'PRACTICAL_VBO',
+    'PRACTICAL_RSI',
+  ],
+  CN: [
+    'ADAPTIVE_MOMENTUM',
+    'MOMENTUM_CONFIRM',
+    'MOMENTUM',
+    'COMMANDER',
+    'PRACTICAL_ATR',
+    'PRACTICAL_DONCHIAN',
+    'PRACTICAL_VBO',
+    'PRACTICAL_BOLLINGER',
+  ],
+}
 
 function actionBadgeVariant(action: string) {
   switch (action) {
@@ -147,7 +162,7 @@ export function SignalsPage() {
                 onChange={(e) => setStrategyId(e.target.value)}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
-                {STRATEGIES.map((s) => (
+                {(ALL_STRATEGIES[market] || ALL_STRATEGIES.US).map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
