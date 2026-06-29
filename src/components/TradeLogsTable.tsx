@@ -1,36 +1,33 @@
-import { memo, useMemo, useState, useCallback, useRef, useEffect, Fragment } from 'react'
+import { memo, useState, useCallback, useMemo, Fragment, useEffect, useRef } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TickerLink } from '@/components/TickerLink'
 import { ActionFilter } from '@/components/ActionFilter'
-import { SortableTableHeader, type SortDirection } from '@/components/SortableTableHeader'
 import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface TradeLogsTableProps {
   logs: Record<string, any>[]
   logFilter: string
-  t: { action: string; symbol?: string; price?: string; reason: string }
+  t: { action?: string; symbol?: string; price?: string; reason?: string; date?: string; portfolio_value?: string; buy?: string; sold?: string; holds?: string; empty?: string; cash_weight?: string }
   handleTickerClick: (ticker: string) => void
   highlightDate?: string | null
   market?: string
+  comparePalette?: string[]
 }
 
 export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, highlightDate, market }: TradeLogsTableProps) => {
-  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({ key: '', direction: null })
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [actionFilter, setActionFilter] = useState<Set<string>>(new Set())
-  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set())
   const tableRef = useRef<HTMLDivElement>(null)
 
   const currencySymbol = market === 'CN' ? '¥' : '$'
 
-  const handleSort = useCallback((key: string) => {
-    setSort((prev) => {
-      if (prev.key === key) {
-        if (prev.direction === 'asc') return { key, direction: 'desc' }
-        if (prev.direction === 'desc') return { key: '', direction: null }
-        return { key, direction: 'asc' }
-      }
-      return { key, direction: 'asc' }
+  const toggleExpand = useCallback((date: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev)
+      if (next.has(date)) next.delete(date)
+      else next.add(date)
+      return next
     })
   }, [])
 
@@ -43,61 +40,49 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
     })
   }, [])
 
-  const toggleDateCollapse = useCallback((date: string) => {
-    setCollapsedDates((prev) => {
-      const next = new Set(prev)
-      if (next.has(date)) next.delete(date)
-      else next.add(date)
-      return next
-    })
-  }, [])
-
-  const badgeMap = useMemo(() => {
-    const map = new Map<string, { text: string; style: string }>()
-    for (const log of logs) {
-      const reason = log.Reason || ''
-      let badgeText = reason
-      let badgeStyle = 'text-muted-foreground/50 border-border/50'
-      if (badgeText.includes('唐奇安突破') || badgeText.includes('Breakout') || badgeText.includes('Entry')) { badgeText = '突破建仓'; badgeStyle = 'text-emerald-500/80 border-emerald-500/30' }
-      else if (badgeText.includes('唐奇安离场') || badgeText.includes('Exit') || badgeText.includes('Stop')) { badgeText = '离场止盈/损'; badgeStyle = 'text-rose-500/80 border-rose-500/30' }
-      else if (badgeText.includes('End of Period')) { badgeText = '周期平仓'; badgeStyle = 'text-blue-500/80 border-blue-500/30' }
-      map.set(reason, { text: badgeText, style: badgeStyle })
+  // 按日期分组，使用最后一条 trade 的 Snapshot（最完整的持仓快照）
+  const dateGroups = useMemo(() => {
+    let filtered = logs
+    if (logFilter) {
+      const needle = logFilter.toLowerCase()
+      filtered = logs.filter((log) =>
+        String(log.Date || '').toLowerCase().includes(needle) ||
+        String(log.Ticker || '').toLowerCase().includes(needle) ||
+        String(log.Action || '').toLowerCase().includes(needle) ||
+        String(log.Reason || '').toLowerCase().includes(needle)
+      )
     }
-    return map
-  }, [logs])
+    if (actionFilter.size > 0) {
+      filtered = filtered.filter((log) => actionFilter.has(log.Action))
+    }
 
-  const filteredLogs = useMemo(() => {
-    let result = logs.filter((log) => {
-      if (logFilter) {
-        const needle = logFilter.toLowerCase()
-        const match = String(log.Date || '').toLowerCase().includes(needle) ||
-          String(log.Ticker || '').toLowerCase().includes(needle) ||
-          String(log.Action || '').toLowerCase().includes(needle) ||
-          String(log.Reason || '').toLowerCase().includes(needle)
-        if (!match) return false
-      }
-      if (actionFilter.size > 0 && !actionFilter.has(log.Action)) return false
-      return true
-    })
+    const groups = new Map<string, Record<string, any>[]>()
+    for (const log of filtered) {
+      const date = String(log.Date || '')
+      if (!groups.has(date)) groups.set(date, [])
+      groups.get(date)!.push(log)
+    }
 
-    if (sort.key && sort.direction) {
-      result = [...result].sort((a, b) => {
-        let aVal: any, bVal: any
-        if (sort.key === 'price') { aVal = Number(a.Price) || 0; bVal = Number(b.Price) || 0 }
-        else if (sort.key === 'pnl') { aVal = Number(a.PnL) || 0; bVal = Number(b.PnL) || 0 }
-        else if (sort.key === 'action') { aVal = a.Action || ''; bVal = b.Action || '' }
-        else if (sort.key === 'ticker') { aVal = a.Ticker || ''; bVal = b.Ticker || '' }
-        else return 0
-        if (typeof aVal === 'string') return sort.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
-        return sort.direction === 'asc' ? aVal - bVal : bVal - aVal
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, trades]) => {
+        const buys = trades.filter((t) => t.Action === 'BUY')
+        const sells = trades.filter((t) => t.Action === 'SELL')
+        // 同日所有 trade 共享同一个 EOD Snapshot（后端 rebuild_daily_snapshots 保证）
+        const snap = trades[0]?.Snapshot
+        const eq = snap?.total_equity
+        const holdList = snap?.holdings || []
+        const names = snap?.names || {}
+        const cashWeight = snap?.cash_weight || '0%'
+        // 继续持有 = EOD 持仓中剔除当天买入的
+        const todayBuyTickers = new Set(buys.map(t => String(t.Ticker || '')))
+        const continuingHoldings = holdList.filter((h: string) => {
+          const ticker = h.split('(')[0].trim()
+          return !todayBuyTickers.has(ticker)
+        })
+        return { date, trades, buys, sells, count: trades.length, equity: eq, holdings: holdList, names, cashWeight, continuingHoldings, holdingsDetail: snap?.holdings_detail || {} }
       })
-    } else {
-      // 默认按日期降序（最新在前），不修改原数组
-      result = [...result].sort((a, b) => String(b.Date || '').localeCompare(String(a.Date || '')))
-    }
-
-    return result
-  }, [logs, logFilter, actionFilter, sort])
+  }, [logs, logFilter, actionFilter])
 
   useEffect(() => {
     if (!highlightDate || !tableRef.current) return
@@ -105,104 +90,263 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [highlightDate])
 
+  const badgeLabel = useCallback((reason: string) => {
+    if (!reason) return '--'
+    if (reason.includes('Entry')) return '建仓'
+    if (reason.includes('Exit')) return '离场'
+    if (reason.includes('End of Period')) return '平仓'
+    if (reason.includes('Rebalance')) return '调仓'
+    return reason.length > 12 ? reason.slice(0, 12) + '…' : reason
+  }, [])
+
+  const badgeStyle = useCallback((reason: string, action: string) => {
+    if (reason.includes('Entry') || action === 'BUY') return 'text-emerald-500/70 border-emerald-500/20 bg-emerald-500/[0.04]'
+    if (reason.includes('Exit') || reason.includes('Stop') || reason.includes('End of Period') || action === 'SELL') return 'text-rose-500/70 border-rose-500/20 bg-rose-500/[0.04]'
+    return 'text-muted-foreground/50 border-border/50'
+  }, [])
+
   return (
     <div ref={tableRef} className="max-w-[1100px] mx-auto w-full px-4">
-      <div className="mb-3 flex items-center gap-3">
+      <div className="mb-2 flex items-center gap-2">
         <ActionFilter selected={actionFilter} onToggle={handleActionToggle} />
       </div>
-      <Table className="relative border-separate border-spacing-0">
+      <Table>
         <TableHeader className="sticky top-0 bg-background/95 backdrop-blur-xl z-30 transition-all border-b border-border/40">
           <TableRow className="border-none hover:bg-transparent">
-            <SortableTableHeader label={t.action} sortKey="action" currentSort={sort} onSort={handleSort} className="w-[100px] h-11 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40" />
-            <SortableTableHeader label={t.symbol || '代码'} sortKey="ticker" currentSort={sort} onSort={handleSort} className="w-[120px] h-11 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40" />
-            <SortableTableHeader label={t.price || '价格'} sortKey="price" currentSort={sort} onSort={handleSort} className="w-[120px] h-11 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40" align="right" />
-            <TableHead className="h-11 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-10 text-center">{t.reason}</TableHead>
-            <SortableTableHeader label="PnL" sortKey="pnl" currentSort={sort} onSort={handleSort} className="w-[120px] h-11 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40" align="right" />
+            <TableHead className="w-[120px] h-8 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/40">{t.date || '日期'}</TableHead>
+            <TableHead className="w-[140px] h-8 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/40 text-right">{t.portfolio_value || '市值'}</TableHead>
+            <TableHead className="h-8 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/40">{t.action || '操作'}</TableHead>
+            <TableHead className="w-[240px] h-8 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/40 text-right">持仓权重</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredLogs.map((log, i, arr) => {
-            const isNewDate = i === 0 || log.Date !== arr[i - 1].Date
-            const isCollapsed = collapsedDates.has(log.Date)
-            const isHighlighted = highlightDate === log.Date
-
-            const badgeInfo = badgeMap.get(log.Reason || '') || { text: log.Reason || '', style: 'text-muted-foreground/50 border-border/50' }
+          {dateGroups.map(({ date, trades, buys, sells, equity, holdings, names, cashWeight, continuingHoldings, holdingsDetail }) => {
+            const isExpanded = expandedRows.has(date)
+            const isHighlighted = highlightDate === date
+            const totalPnL = trades.reduce((sum, t) => sum + (Number(t.PnL) || 0), 0)
 
             return (
-              <Fragment key={`${i}-group`}>
-                {isNewDate && (
-                  <TableRow
-                    key={`${i}-header`}
-                    data-date={log.Date}
-                    className={cn(
-                      "bg-muted/5 hover:bg-muted/10 transition-colors border-none group/header overflow-visible cursor-pointer",
-                      isHighlighted && "bg-primary/5 ring-1 ring-inset ring-primary/20",
-                    )}
-                    onClick={() => toggleDateCollapse(log.Date)}
-                  >
-                    <TableCell colSpan={5} className="py-3 px-4 border-y border-border/30">
-                      <div className="flex items-center justify-between gap-6">
-                        <div className="flex items-center gap-3">
-                          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/40" />}
-                          <span className="text-[13px] font-black tracking-tighter text-foreground/70">{log.Date}</span>
-                          <div className="h-4 w-[1px] bg-border/40 mx-1" />
+              <Fragment key={date}>
+                <TableRow
+                  data-date={date}
+                  className={cn(
+                    "border-b border-border/80 hover:bg-accent/5 transition-colors align-top cursor-pointer",
+                    isHighlighted && "bg-primary/5 ring-1 ring-inset ring-primary/20",
+                  )}
+                  onClick={() => toggleExpand(date)}
+                >
+                  {/* 日期 — 对齐月度 */}
+                  <TableCell className="font-mono text-xs text-muted-foreground py-3">
+                    <span className="inline-flex items-center gap-1.5">
+                      {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                      {date}
+                    </span>
+                  </TableCell>
+
+                  {/* 组合市值 — 对齐月度 Portfolio Value */}
+                  <TableCell className="font-mono text-sm font-semibold py-3 text-right">
+                    {equity != null ? `${currencySymbol}${Number(equity).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '--'}
+                  </TableCell>
+
+                  {/* 操作分组 — 对齐月度 Selected Assets */}
+                  <TableCell className="py-3">
+                    <div className="flex flex-col gap-3">
+                      {buys.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-green-500/80" />
+                              {t.buy || '买入'}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {buys.map((log, idx) => {
+                              const ticker = String(log.Ticker || '')
+                              const name = log.TickerName || ticker
+                              return (
+                                <span key={`buy-${ticker}-${idx}`} className="inline-flex items-center gap-1.5 rounded-md border border-green-200/30 bg-green-500/5 px-2 py-0.5">
+                                  <span className="text-[11px] font-bold tracking-tight uppercase">
+                                    <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+                                    {log.Price != null ? `${currencySymbol}${Number(log.Price).toFixed(2)}` : '--'}
+                                  </span>
+                                </span>
+                              )
+                            })}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 overflow-visible">
-                          {log.Snapshot?.holdings?.map((h: string, idx: number) => {
-                            const ticker = h.split('(')[0].trim()
-                            const name = log.Snapshot?.names?.[ticker] || ticker
-                            return (
-                              <div key={idx} className="group/pill flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-background/40 border border-border/30 shadow-sm transition-all hover:border-primary/30">
-                                <span className="text-[10px] font-black text-foreground/50 font-mono tracking-tighter group-hover/pill:text-primary/70 transition-colors">{name}</span>
-                                <span className="text-[9px] font-bold text-muted-foreground/30 tabular-nums">{h.match(/\((.*)\)/)?.[1]}</span>
-                              </div>
-                            )
-                          })}
-                          {log.Snapshot?.cash_weight && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-yellow-500/5 border border-yellow-500/20 text-yellow-600/60 shadow-[0_0_12px_rgba(234,179,8,0.05)] ring-1 ring-yellow-500/10">
-                              <span className="text-[9px] font-black tracking-widest uppercase opacity-70">Cash</span>
-                              <span className="text-[9px] font-bold tabular-nums">{log.Snapshot.cash_weight}</span>
+                      )}
+                      {/* 继续持有 — Snapshot 中剔除当天交易（前几天买入今天继续拿着） */}
+                      {continuingHoldings && continuingHoldings.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500/80" />
+                              {t.holds || '持有'}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {continuingHoldings.map((h: string, idx: number) => {
+                              const ticker = h.split('(')[0].trim()
+                              const display = names[ticker] || ticker
+                              const pct = h.match(/\((.*)\)/)?.[1] || '--'
+                              const px = holdingsDetail?.[ticker]?.price
+                              return (
+                                <span key={`cont-${ticker}-${idx}`} className="relative inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/80 px-2 py-0.5">
+                                  <span className="text-[11px] font-bold tracking-tight uppercase">
+                                    <TickerLink ticker={ticker} displayName={display} onClick={() => handleTickerClick(ticker)} />
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground/50 tabular-nums">{pct}</span>
+                                  <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+                                    {px != null ? `${currencySymbol}${Number(px).toFixed(2)}` : '--'}
+                                  </span>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {sells.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-red-500/80" />
+                              {t.sold || '卖出'}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {sells.map((log, idx) => {
+                              const ticker = String(log.Ticker || '')
+                              const name = log.TickerName || ticker
+                              const pnl = Number(log.PnL) || 0
+                              return (
+                                <span key={`sell-${ticker}-${idx}`} className="inline-flex items-center gap-1.5 rounded-md border border-red-200/30 bg-red-500/5 px-2 py-0.5">
+                                  <span className="text-[11px] font-bold tracking-tight uppercase text-red-600/80">
+                                    <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
+                                  </span>
+                                  <span className="text-[10px] text-red-500/60 tabular-nums">
+                                    {log.Price != null ? `${currencySymbol}${Number(log.Price).toFixed(2)}` : '--'}
+                                  </span>
+                                  {pnl !== 0 && (
+                                    <span className={cn("text-[9px] font-mono tabular-nums ml-0.5", pnl > 0 ? "text-emerald-500/70" : "text-rose-500/70")}>
+                                      {pnl > 0 ? '+' : ''}{pnl.toFixed(0)}
+                                    </span>
+                                  )}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {trades.length === 0 && (
+                        <span className="text-[10px] text-muted-foreground/30 uppercase tracking-wider">{t.empty || '无交易'}</span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* 持仓权重 — 对齐月度 Weights 列（权重条） */}
+                  <TableCell className="text-right py-2 align-top">
+                    <div className="flex flex-wrap justify-end gap-1.5 ml-auto max-w-[280px]">
+                      {holdings.length > 0 ? holdings.map((h: string) => {
+                        const ticker = h.split('(')[0].trim()
+                        const display = names[ticker] || ticker
+                        const pctStr = h.match(/\((.*)\)/)?.[1] || '0%'
+                        const parsedWeight = parseFloat(pctStr) || 0
+                        return (
+                          <div key={ticker} className="relative group border border-border/40 bg-secondary/10 rounded-sm overflow-hidden px-1.5 py-0.5 min-w-[72px] flex justify-between items-center z-0 shadow-sm transition-colors hover:border-primary/30">
+                            <div className="absolute left-0 top-0 bottom-0 bg-primary/10 transition-all -z-10 group-hover:bg-primary/20" style={{ width: `${parsedWeight}%` }} />
+                            <span className="text-[9px] font-bold text-muted-foreground/70 tracking-tight mr-2 truncate max-w-[60px]" title={ticker}>{display}</span>
+                            <span className="text-[10px] font-mono font-black text-foreground/80">{pctStr}</span>
+                          </div>
+                        )
+                      }) : (
+                        <span className="text-[10px] text-muted-foreground/20">--</span>
+                      )}
+                      {holdings.length > 0 && cashWeight && parseFloat(cashWeight) > 0 && (
+                        <div className="relative group border border-yellow-500/20 bg-yellow-500/5 rounded-sm overflow-hidden px-1.5 py-0.5 min-w-[72px] flex justify-between items-center z-0 shadow-sm">
+                          <div className="absolute left-0 top-0 bottom-0 bg-yellow-500/10 transition-all -z-10" style={{ width: `${parseFloat(cashWeight) || 0}%` }} />
+                          <span className="text-[9px] font-bold text-yellow-600/70 dark:text-yellow-500/60 tracking-tight mr-2">{t.cash_weight || '现金'}</span>
+                          <span className="text-[10px] font-mono font-black text-yellow-700 dark:text-yellow-400">{cashWeight}</span>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+
+                {/* 展开详情 — 完全复用月度布局 */}
+                {isExpanded && (
+                  <TableRow className="bg-muted/5">
+                    <TableCell colSpan={4} className="py-4 px-6">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">持仓快照</span>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {holdings.length > 0 ? holdings.map((h: string, idx: number) => {
+                              const ticker = h.split('(')[0].trim()
+                              const display = names[ticker] || ticker
+                              const pct = h.match(/\((.*)\)/)?.[1] || '--'
+                              return (
+                                <span key={idx} className="rounded-md border border-border/50 bg-background/50 px-2 py-1 text-xs font-mono">
+                                  {display} — {pct}
+                                </span>
+                              )
+                            }) : (
+                              <span className="text-[10px] text-muted-foreground/30 uppercase tracking-wider">空仓</span>
+                            )}
+                          </div>
+                          {equity != null && (
+                            <div className="mt-2 text-[10px] text-muted-foreground/40 tabular-nums">
+                              市值: {currencySymbol}{Number(equity).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                              {totalPnL !== 0 && (
+                                <span className={cn("ml-3 font-mono", totalPnL > 0 ? "text-emerald-500" : "text-rose-500")}>
+                                  当日 PnL: {totalPnL > 0 ? '+' : ''}{currencySymbol}{Math.abs(totalPnL).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">操作明细</span>
+                          <div className="mt-2 flex flex-col gap-1.5">
+                            {trades.map((log, idx) => {
+                              const ticker = String(log.Ticker || '')
+                              const name = log.TickerName || ticker
+                              const action = log.Action
+                              const reason = badgeLabel(log.Reason || '')
+                              const bs = badgeStyle(log.Reason || '', action)
+                              const isBuy = action === 'BUY'
+                              const pnl = Number(log.PnL) || 0
+                              return (
+                                <div key={idx} className="flex items-center gap-2 text-xs">
+                                  <span className={cn(
+                                    "inline-flex items-center px-1.5 py-0 rounded-[3px] text-[9px] font-bold tracking-[0.04em] w-8 justify-center border uppercase",
+                                    isBuy ? "text-emerald-500/70 border-emerald-500/20 bg-emerald-500/[0.04]"
+                                          : "text-rose-500/70 border-rose-500/20 bg-rose-500/[0.04]"
+                                  )}>
+                                    {action}
+                                  </span>
+                                  <span className="text-xs font-bold tracking-tight">
+                                    <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                                    {log.Price != null ? `${currencySymbol}${Number(log.Price).toFixed(2)}` : '--'}
+                                  </span>
+                                  {log.Shares != null && (
+                                    <span className="text-[10px] text-muted-foreground/40 tabular-nums">×{log.Shares}</span>
+                                  )}
+                                  <span className={cn("inline-flex px-1.5 py-0 rounded-[3px] text-[8px] font-bold border uppercase tracking-[0.04em]", bs)}>{reason}</span>
+                                  {pnl !== 0 && (
+                                    <span className={cn("text-[10px] font-mono tabular-nums ml-auto", pnl > 0 ? "text-emerald-500 font-semibold" : "text-rose-500 font-semibold")}>
+                                      {pnl > 0 ? '+' : ''}{currencySymbol}{Math.abs(pnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!isCollapsed && (
-                  <TableRow key={`${i}-row`} className="border-b-[0.5px] border-border/30 hover:bg-white/[0.02] transition-colors group/row">
-                    <TableCell className="py-2.5 align-middle">
-                      <span className={cn(
-                        "inline-flex items-center px-2 py-0.5 rounded-[4px] text-[10px] font-black tracking-[0.1em] w-12 justify-center border",
-                        log.Action === 'BUY' ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-500/70"
-                          : log.Action === 'SELL' ? "bg-rose-500/5 border-rose-500/10 text-rose-500/70"
-                            : "bg-slate-500/5 border-slate-500/10 text-slate-500/50"
-                      )}>{log.Action}</span>
-                    </TableCell>
-                    <TableCell className="py-2.5 align-middle">
-                      <TickerLink ticker={log.Ticker} displayName={log.TickerName || log.Ticker} onClick={handleTickerClick} className="font-bold tracking-tight text-foreground/80 group-hover/row:text-primary transition-colors text-[13px] border-none bg-transparent hover:bg-transparent px-0" />
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-[12px] font-bold py-2.5 tracking-tighter tabular-nums">
-                      <span className="text-muted-foreground/20 mr-1.5 font-normal">{currencySymbol}</span>
-                      {log.Price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="py-2.5 px-10 text-center">
-                      <span className={cn("inline-flex px-2 py-0.5 rounded-[4px] text-[9px] font-black border uppercase tracking-[0.05em]", badgeInfo.style)}>{badgeInfo.text}</span>
-                    </TableCell>
-                    <TableCell className={cn(
-                      "text-right font-mono text-[12px] py-2.5 tabular-nums transition-all tracking-tighter",
-                      (log.PnL || 0) > 0 ? "text-emerald-500 font-bold" : (log.PnL || 0) < 0 ? "text-rose-500 font-bold" : "text-muted-foreground/30"
-                    )}>
-                      {log.PnL && log.PnL !== 0 ? (
-                        <span className="flex items-center justify-end">
-                          <span className="text-[10px] text-muted-foreground/20 mr-1.5 font-normal">{currencySymbol}</span>
-                          {Math.abs(log.PnL).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-black tracking-widest text-muted-foreground/20 uppercase opacity-60">
-                          {log.Action === 'SELL' ? 'REDUCE' : log.Type === 'LONG_ADD' ? 'ADD' : 'OPEN'}
-                        </span>
-                      )}
                     </TableCell>
                   </TableRow>
                 )}

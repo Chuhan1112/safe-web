@@ -198,7 +198,8 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
             <TradeLogsTable
               logs={mockTradeLogs}
               logFilter=""
-              t={{ action: 'Action', symbol: 'Symbol', price: 'Price', reason: 'Reason' }}
+              t={{ action: 'Action', symbol: 'Symbol', price: 'Price', reason: 'Reason', date: 'Date', portfolio_value: 'Value', buy: 'Buy', sold: 'Sell', holds: 'Hold', cash_weight: 'Cash' }}
+              comparePalette={['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']}
               handleTickerClick={(t) => console.log('click', t)}
               highlightDate={hoveredDate}
               market={market}
