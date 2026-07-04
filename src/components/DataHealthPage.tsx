@@ -117,6 +117,19 @@ export const DataHealthPage = memo(function DataHealthPage() {
     fetchData()
   }, [fetchData])
 
+  // 监听 sync 完成事件：失效缓存并 refetch（sync 后健康统计已变）
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detailMarket = (e as CustomEvent<{ market?: string }>).detail?.market
+      if (detailMarket && detailMarket !== market) return
+      requestCache.invalidate(`health-summary-${market}`)
+      requestCache.invalidate(`health-tickers-${market}`)
+      fetchData()
+    }
+    window.addEventListener('data:sync-complete', handler)
+    return () => window.removeEventListener('data:sync-complete', handler)
+  }, [market, fetchData])
+
   // ── 过滤 ──────────────────────────────────────────────────
 
   const filteredTickers = useMemo(() => {
