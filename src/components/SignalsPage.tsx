@@ -109,6 +109,44 @@ export function SignalsPage() {
     }
   }, [market])
 
+  // ── 盘中脉冲轮询 ──
+  interface PulseData {
+    ts: string
+    prices: { current: Record<string, number>; prev_close: Record<string, number> }
+    enhancements: {
+      ts?: string
+      return_ranking?: { symbol: string; price: number; prev_close: number; change_pct: number; rank: number }[]
+      breakout_signals?: { symbol: string; price: number; type: string; breakout_pct: number; volume_ratio: number }[]
+      market_breadth?: { up: number; down: number; up_ratio: number }
+    }
+    market_open: boolean
+    degraded: boolean
+    degraded_reason: string
+  }
+  const [pulseData, setPulseData] = useState<PulseData | null>(null)
+
+  const fetchPulse = useCallback(async () => {
+    // 从 signals signal.portfolio 提取符号列表
+    if (!signalsData || !signalsData.signals || signalsData.signals.length === 0) return
+    const symbols = signalsData.signals.map((s) => s.ticker)
+    try {
+      const res = await fetch(`${API}/signals/live/pulse?symbols=${symbols.join(',')}&market=${market}`)
+      if (!res.ok) return
+      setPulseData(await res.json())
+    } catch { /* pulse 静默失败 */ }
+  }, [signalsData, market])
+
+  // pulse 轮询: 每 45s 刷新一次盘中价格
+  useEffect(() => {
+    if (!signalsData || !signalsData.metadata?.has_live_quotes) {
+      setPulseData(null)
+      return
+    }
+    fetchPulse()
+    const interval = setInterval(fetchPulse, 45000)
+    return () => clearInterval(interval)
+  }, [signalsData, fetchPulse])
+
   const fetchSignals = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -291,6 +329,80 @@ export function SignalsPage() {
         data={selectedSignal?.explanation ?? null}
         loading={drawerLoading}
       />
+
+      {/* Pulse: 盘中实时价格 + 增强信号 */}
+      {pulseData && !pulseData.degraded && (
+        <Card className="border-blue-200 bg-blue-50/30 dark:bg-blue-950/10">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                盘中实时 {pulseData.market_open ? '● 交易中' : '○ 盘后'}
+              </CardTitle>
+              <span className="text-xs text-muted-foreground">
+                {pulseData.ts ? new Date(pulseData.ts).toLocaleTimeString() : ''}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* 持仓价格变动 */}
+            {pulseData.prices?.current && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">持仓实时价格</p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {signalsData?.portfolio?.map((p) => {
+                    const cur = pulseData.prices.current[p.ticker]
+                    const prev = pulseData.prices.prev_close?.[p.ticker]
+                    const changePct = cur != null && prev != null && prev > 0 ? (cur - prev) / prev : null
+                    return (
+                      <div key={p.ticker} className="flex flex-col rounded bg-white/60 dark:bg-black/20 px-2 py-1.5 text-xs">
+                        <span className="font-medium">{p.ticker}</span>
+                        <span className="font-mono">{cur?.toFixed(2) ?? '-'}</span>
+                        {changePct != null && (
+                          <span className={`font-mono ${changePct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {changePct >= 0 ? '+' : ''}{(changePct * 100).toFixed(2)}%
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 突破信号 */}
+            {pulseData.enhancements?.breakout_signals && pulseData.enhancements.breakout_signals.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">
+                  盘中突破信号 ({pulseData.enhancements.breakout_signals.length})
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {pulseData.enhancements.breakout_signals.slice(0, 10).map((bs) => (
+                    <Badge
+                      key={bs.symbol}
+                      variant={bs.type.includes('up') || bs.type === 'strong_up' ? 'default' : 'destructive'}
+                      className="text-xs"
+                    >
+                      {bs.symbol} {bs.type.includes('up') ? '↑' : '↓'}+{Math.abs(bs.breakout_pct * 100).toFixed(1)}% vol{bs.volume_ratio}x
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 市场广度 */}
+            {pulseData.enhancements?.market_breadth && (
+              <p className="text-xs text-muted-foreground">
+                市场广度: {pulseData.enhancements.market_breadth.up}↑ / {pulseData.enhancements.market_breadth.down}↓
+                ({(pulseData.enhancements.market_breadth.up_ratio * 100).toFixed(0)}% 上涨)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 动量排名仪表盘 (Path A) */}
       <Card>
