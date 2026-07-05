@@ -4,19 +4,21 @@ import { mockResearchReports, getReportById } from '@/mock/researchData'
 import type { ResearchReport } from '@/types/research'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useMarket } from '@/contexts/MarketContext'
 import { cn } from '@/lib/utils'
 import { Search, FileText, AlertTriangle, RefreshCw, HelpCircle, ExternalLink, Calendar, Layers, Target, WifiOff } from 'lucide-react'
 
 const API_BASE = 'http://127.0.0.1:8000'
 
 export function ResearchPage() {
+  const { market } = useMarket()
   const [reports, setReports] = useState<ResearchReport[]>(mockResearchReports)
   const [selectedId, setSelectedId] = useState<string>(mockResearchReports[0]?.id ?? '')
   const [search, setSearch] = useState('')
   const [apiAvailable, setApiAvailable] = useState(false)
 
   useEffect(() => {
-    fetch(`${API_BASE}/research`)
+    fetch(`${API_BASE}/research?market=${market}`)
       .then(res => res.json())
       .then(data => {
         if (data.reports?.length > 0) {
