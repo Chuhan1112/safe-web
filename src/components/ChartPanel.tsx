@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BacktestChart } from '@/components/BacktestChart';
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { ChartSkeleton } from '@/components/skeletons/ChartSkeleton';
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 interface BacktestResult {
   trade_logs?: Record<string, any>[]
@@ -323,7 +323,7 @@ export const ChartPanel = React.memo(({
                           <Minus className="h-3 w-3" />
                         )}
                         <span className="font-bold tracking-tight">{row.name || row.ticker}</span>
-                        <span className="opacity-60">{currencySymbol}{Number.isFinite(row.price) ? row.price.toFixed(2) : '--'}</span>
+                        <span className="opacity-60">{formatPrice(row.price, currencySymbol)}</span>
                       </span>
                     ))}
                   </div>
