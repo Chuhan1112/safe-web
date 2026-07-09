@@ -29,6 +29,27 @@ interface DataHealthTableProps {
   onSelect?: (ticker: TickerHealthRow) => void
   selectedSymbol?: string | null
   market?: string
+  viewMode?: ViewMode
+}
+
+export type ViewMode = 'abnormal' | 'limited' | 'all'
+
+export const STATUS_ORDER: Record<string, number> = {
+  missing: 0,
+  anomaly: 1,
+  stale: 2,
+  unknown: 3,
+  healthy: 4,
+}
+
+const MAX_DEFAULT_ROWS = 200
+
+export function sortBySeverity(rows: TickerHealthRow[]): TickerHealthRow[] {
+  return [...rows].sort((a, b) => {
+    const orderA = STATUS_ORDER[a.status] ?? 999
+    const orderB = STATUS_ORDER[b.status] ?? 999
+    return orderA - orderB || a.symbol.localeCompare(b.symbol)
+  })
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -53,8 +74,23 @@ export const DataHealthTable = memo(function DataHealthTable({
   onSelect,
   selectedSymbol,
   market = 'US',
+  viewMode = 'limited',
 }: DataHealthTableProps) {
   const showName = market === 'CN'
+
+  // ── 排序与截断 ────────────────────────────────────────────
+
+  const filtered =
+    viewMode === 'abnormal'
+      ? data.filter((row) => row.status !== 'healthy')
+      : data
+
+  const sorted = sortBySeverity(filtered)
+  const displayRows =
+    viewMode === 'limited'
+      ? sorted.slice(0, MAX_DEFAULT_ROWS)
+      : sorted
+
   if (data.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -78,7 +114,7 @@ export const DataHealthTable = memo(function DataHealthTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row) => (
+          {displayRows.map((row) => (
             <TableRow
               key={row.symbol}
               className={cn(

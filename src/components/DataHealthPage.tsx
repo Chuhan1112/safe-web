@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { DataHealthTable } from '@/components/DataHealthTable'
+import { DataHealthTable, type ViewMode } from '@/components/DataHealthTable'
 import { DataHealthDetailDrawer } from '@/components/DataHealthDetailDrawer'
 import { useMarket } from '@/contexts/MarketContext'
 import { requestCache } from '@/utils/requestCache'
@@ -47,6 +47,13 @@ const STATUS_FILTERS = [
   { key: 'anomaly', label: '异常' },
 ] as const
 
+
+const VIEW_MODES: { key: ViewMode; label: string }[] = [
+  { key: 'limited', label: '默认 200 行' },
+  { key: 'abnormal', label: '仅显示异常' },
+  { key: 'all', label: '显示全部' },
+]
+
 const SUMMARY_CARDS: { key: keyof HealthSummary; label: string; color: string }[] = [
   { key: 'healthy', label: '健康', color: 'text-emerald-600 dark:text-emerald-400' },
   { key: 'stale', label: '过期', color: 'text-amber-600 dark:text-amber-400' },
@@ -63,6 +70,7 @@ export const DataHealthPage = memo(function DataHealthPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [selectedTicker, setSelectedTicker] = useState<TickerHealthRow | null>(null)
   const [loading, setLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('limited')
 
   // ── 缓存帮助函数 ──────────────────────────────────────────
 
@@ -233,12 +241,27 @@ export const DataHealthPage = memo(function DataHealthPage() {
           ))}
         </div>
 
+        {/* 视图切换 */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {VIEW_MODES.map((m) => (
+            <Button
+              key={m.key}
+              variant={viewMode === m.key ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode(m.key)}
+            >
+              {m.label}
+            </Button>
+          ))}
+        </div>
+
         {/* 表格 */}
         <DataHealthTable
           data={filteredTickers}
           onSelect={setSelectedTicker}
           selectedSymbol={selectedTicker?.symbol}
           market={market}
+          viewMode={viewMode}
         />
       </div>
 
