@@ -113,6 +113,11 @@ export const ChartPanel = React.memo(({
     }
   }, [tradeMemo, rebalanceMemo, compareMode])
 
+  const compareKey = useMemo(
+    () => `${chartKey}-${Object.keys(compareResults).join('-')}`,
+    [chartKey, compareResults],
+  )
+
   const hoveredSnapshot = useMemo(() => {
     if (!hoverLookup || !hoveredTime) return null;
     const hoveredTs = parseDateToTs(hoveredTime);
@@ -353,7 +358,7 @@ export const ChartPanel = React.memo(({
             <span className="text-sm font-medium">{error}</span>
           </div>
         ) : compareMode && Object.keys(compareResults).length > 0 ? (
-          <div key={`${chartKey}-${JSON.stringify(compareResults)}`} className="w-full h-[400px]">
+          <div key={compareKey} className="w-full h-[400px]">
             <BacktestChart
               series={Object.entries(compareResults).map(([id, res]: [string, any], idx: number) => {
                 const isHighlighted = highlightStrategy === null || highlightStrategy === id;
@@ -370,7 +375,7 @@ export const ChartPanel = React.memo(({
             />
           </div>
         ) : result ? (
-          <div key={`${chartKey}-${result.metrics?.cagr || 0}`} className="w-full h-[400px]">
+          <div key={`${chartKey}-${chartView}`} className="w-full h-[400px]">
             <BacktestChart
               data={chartView === "equity" ? result.equity_curve : result.drawdown_curve}
               onHoverTime={setHoveredTime}
