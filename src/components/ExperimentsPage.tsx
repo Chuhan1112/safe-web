@@ -22,6 +22,13 @@ interface Experiment {
   created_at: string
 }
 
+interface RerunState {
+  experimentId: string
+  paramsJson: string
+  running: boolean
+  error: string
+}
+
 export const ExperimentsPage = () => {
   const { market: globalMarket } = useMarket()
   const [experiments, setExperiments] = useState<Experiment[]>([])
@@ -29,6 +36,18 @@ export const ExperimentsPage = () => {
   const [filterStrategy, setFilterStrategy] = useState('')
   const [filterMarket, setFilterMarket] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // 调参重跑状态
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [rerunState, setRerunState] = useState<Record<string, RerunState>>({})
+  // 重跑结果（BacktestResult 格式），key 为 "experimentId" 或 "experimentId:variant"
+  const [rerunResults, setRerunResults] = useState<Record<string, {
+    metrics: Record<string, number>
+    equity_curve: { time: string; value: number }[]
+    drawdown_curve: { time: string; value: number }[]
+    logs: unknown[]
+    trade_logs: unknown[]
+  }>>({})
 
   useEffect(() => {
     // 默认跟随全局市场；用户已手动选择(非空)则保留其选择
@@ -62,7 +81,99 @@ export const ExperimentsPage = () => {
     })
   }
 
+  const startEdit = (exp: Experiment) => {
+    const pretty = JSON.stringify(exp.params, null, 2)
+    setEditingId(exp.id)
+    setRerunState((prev) => ({
+      ...prev,
+      [exp.id]: { experimentId: exp.id, paramsJson: pretty, running: false, error: '' },
+    }))
+  }
+
+  const cancelEdit = (id: string) => {
+    setEditingId(null)
+    setRerunState((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+  }
+
+  const updateParamsJson = (id: string, json: string) => {
+    setRerunState((prev) => ({
+      ...prev,
+      [id]: { ...(prev[id]!), paramsJson: json, error: '' },
+    }))
+  }
+
+  const runRerun = async (exp: Experiment) => {
+    const state = rerunState[exp.id]
+    if (!state) return
+
+    let paramOverrides: Record<string, unknown> = {}
+    try {
+      paramOverrides = JSON.parse(state.paramsJson)
+    } catch {
+      setRerunState((prev) => ({
+        ...prev,
+        [exp.id]: { ...state, error: 'JSON 解析失败，请检查格式' },
+      }))
+      return
+    }
+
+    setRerunState((prev) => ({
+      ...prev,
+      [exp.id]: { ...state, running: true, error: '' },
+    }))
+
+    try {
+      const res = await fetch(`${API}/experiments/${exp.id}/rerun`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ param_overrides: paramOverrides }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || `HTTP ${res.status}`)
+      }
+      const data = await res.json()
+
+      // 标准化 metrics key（后端返回 snake_case）
+      const raw = data.metrics || {}
+      setRerunResults((prev) => ({
+        ...prev,
+        [exp.id]: {
+          metrics: {
+            total_return: raw.total_return ?? 0,
+            cagr: raw.cagr ?? 0,
+            sharpe: raw.sharpe ?? 0,
+            max_drawdown: raw.max_drawdown ?? 0,
+            turnover: raw.turnover ?? 0,
+          },
+          equity_curve: data.equity_curve || [],
+          drawdown_curve: data.drawdown_curve || [],
+          logs: data.logs || [],
+          trade_logs: data.trade_logs || [],
+        },
+      }))
+      // 成功后关闭编辑器
+      setEditingId(null)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '未知错误'
+      setRerunState((prev) => ({
+        ...prev,
+        [exp.id]: { ...state, running: false, error: msg },
+      }))
+    }
+  }
+
   const selected = experiments.filter((e) => selectedIds.has(e.id))
+
+  // 对比展示：原始实验 + 重跑结果
+  const compareEntries = selected.map((exp) => {
+    const rerun = rerunResults[exp.id]
+    return { exp, rerun }
+  })
 
   return (
     <div className="space-y-4 p-4">
@@ -92,11 +203,61 @@ export const ExperimentsPage = () => {
           <CardContent className="p-4">
             <h4 className="mb-2 text-sm font-medium">对比 ({selected.length})</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              {selected.map((exp) => (
+              {compareEntries.map(({ exp, rerun }) => (
                 <div key={exp.id} className="rounded border p-3">
-                  <div className="font-mono text-xs text-muted-foreground">{exp.id}</div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-mono text-xs text-muted-foreground">{exp.id}</div>
+                    {exp.type === 'backtest' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-1.5 text-[10px]"
+                        onClick={() => startEdit(exp)}
+                      >
+                        调参重跑
+                      </Button>
+                    )}
+                  </div>
                   <div className="font-medium">{exp.name || exp.strategy_id}</div>
+
+                  {/* 参数编辑器 */}
+                  {editingId === exp.id && rerunState[exp.id] && (
+                    <div className="mt-2 space-y-1.5">
+                      <textarea
+                        className="w-full h-24 rounded border bg-background px-2 py-1 font-mono text-[11px] resize-y"
+                        value={rerunState[exp.id]!.paramsJson}
+                        onChange={(e) => updateParamsJson(exp.id, e.target.value)}
+                        spellCheck={false}
+                      />
+                      {rerunState[exp.id]!.error && (
+                        <div className="text-[10px] text-red-500">{rerunState[exp.id]!.error}</div>
+                      )}
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          className="h-6 text-[10px]"
+                          disabled={rerunState[exp.id]!.running}
+                          onClick={() => runRerun(exp)}
+                        >
+                          {rerunState[exp.id]!.running ? '运行中...' : '重跑'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px]"
+                          onClick={() => cancelEdit(exp.id)}
+                        >
+                          取消
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 原始 metrics */}
                   <div className="mt-1 space-y-0.5">
+                    <div className="text-[10px] text-muted-foreground mb-0.5">
+                      {rerun ? '原始' : ''}
+                    </div>
                     {Object.entries(exp.metrics).slice(0, 5).map(([k, v]) => (
                       <div key={k} className="flex justify-between">
                         <span className="text-muted-foreground">{k}</span>
@@ -104,6 +265,21 @@ export const ExperimentsPage = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* 重跑结果 metrics */}
+                  {rerun && (
+                    <div className="mt-2 pt-2 border-t border-dashed space-y-0.5">
+                      <div className="text-[10px] text-primary mb-0.5">重跑结果</div>
+                      {Object.entries(rerun.metrics).map(([k, v]) => (
+                        <div key={k} className="flex justify-between">
+                          <span className="text-muted-foreground">{k}</span>
+                          <span className="font-mono text-primary">
+                            {typeof v === 'number' ? v.toFixed(4) : String(v)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

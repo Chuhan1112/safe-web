@@ -1,7 +1,7 @@
 import { memo, useState, useCallback, Fragment } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TickerLink } from '@/components/TickerLink'
-import { cn } from '@/lib/utils'
+import { cn, formatPrice } from '@/lib/utils'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface RebalanceLogsTableProps {
@@ -101,7 +101,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                     <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
-                                    {log.Prices?.[ticker] != null ? `${currencySymbol}${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
+                                    {formatPrice(log.Prices?.[ticker], currencySymbol)}
                                   </span>
                                 </span>
                               ))}
@@ -124,7 +124,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                     <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
-                                    {log.Prices?.[ticker] != null ? `${currencySymbol}${Number(log.Prices[ticker]).toFixed(2)}` : '--'}
+                                    {formatPrice(log.Prices?.[ticker], currencySymbol)}
                                   </span>
                                 </span>
                               ))}
@@ -149,7 +149,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                     <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-red-500/60 tabular-nums">
-                                    {log.ExitPrices?.[ticker] != null ? `${currencySymbol}${Number(log.ExitPrices[ticker]).toFixed(2)}` : '--'}
+                                    {formatPrice(log.ExitPrices?.[ticker], currencySymbol)}
                                   </span>
                                 </span>
                               ))}
@@ -203,10 +203,10 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">操作明细</span>
                         <div className="mt-2 flex flex-col gap-1">
                           {(log.Exited || []).filter(Boolean).map((t: string) => (
-                            <span key={t} className="text-xs text-red-500/80">- SELL {displayName(t, log.Names || {})} @ {currencySymbol}{log.ExitPrices?.[t]?.toFixed(2) ?? '--'}</span>
+                            <span key={t} className="text-xs text-red-500/80">- SELL {displayName(t, log.Names || {})} @ {formatPrice(log.ExitPrices?.[t], currencySymbol)}</span>
                           ))}
                           {(log.Selected || []).filter((t: string) => !(log.PrevHoldings || []).includes(t)).map((t: string) => (
-                            <span key={t} className="text-xs text-emerald-500/80">+ BUY {displayName(t, log.Names || {})} @ {currencySymbol}{log.Prices?.[t]?.toFixed(2) ?? '--'}</span>
+                            <span key={t} className="text-xs text-emerald-500/80">+ BUY {displayName(t, log.Names || {})} @ {formatPrice(log.Prices?.[t], currencySymbol)}</span>
                           ))}
                         </div>
                       </div>

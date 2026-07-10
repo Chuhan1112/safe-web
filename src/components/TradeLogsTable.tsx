@@ -2,7 +2,7 @@ import { memo, useState, useCallback, useMemo, Fragment, useEffect, useRef } fro
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TickerLink } from '@/components/TickerLink'
 import { ActionFilter } from '@/components/ActionFilter'
-import { cn } from '@/lib/utils'
+import { cn, formatPrice } from '@/lib/utils'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface TradeLogsTableProps {
@@ -169,7 +169,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                     <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
-                                    {log.Price != null ? `${currencySymbol}${Number(log.Price).toFixed(2)}` : '--'}
+                                    {formatPrice(log.Price, currencySymbol)}
                                   </span>
                                 </span>
                               )
@@ -199,7 +199,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/50 tabular-nums">{pct}</span>
                                   <span className="text-[10px] text-muted-foreground/70 tabular-nums">
-                                    {px != null ? `${currencySymbol}${Number(px).toFixed(2)}` : '--'}
+                                    {formatPrice(px, currencySymbol)}
                                   </span>
                                 </span>
                               )
@@ -226,7 +226,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                     <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-red-500/60 tabular-nums">
-                                    {log.Price != null ? `${currencySymbol}${Number(log.Price).toFixed(2)}` : '--'}
+                                    {formatPrice(log.Price, currencySymbol)}
                                   </span>
                                   {pnl !== 0 && (
                                     <span className={cn("text-[9px] font-mono tabular-nums ml-0.5", pnl > 0 ? "text-emerald-500/70" : "text-rose-500/70")}>
@@ -330,7 +330,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                     <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                                    {log.Price != null ? `${currencySymbol}${Number(log.Price).toFixed(2)}` : '--'}
+                                    {formatPrice(log.Price, currencySymbol)}
                                   </span>
                                   {log.Shares != null && (
                                     <span className="text-[10px] text-muted-foreground/40 tabular-nums">×{log.Shares}</span>
