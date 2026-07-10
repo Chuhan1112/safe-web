@@ -71,9 +71,22 @@ export const ChartPanel = React.memo(({
 }: ChartPanelProps) => {
   const [hoveredTime, setHoveredTimeRaw] = useState<string | null>(null);
   const rafRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, []);
+
   const setHoveredTime = useCallback((time: string | null) => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
+      if (!mountedRef.current) return;
       setHoveredTimeRaw(time);
       rafRef.current = null;
     });
