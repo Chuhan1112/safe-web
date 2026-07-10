@@ -93,19 +93,6 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
   const textColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
 
   useEffect(() => {
-    if (!chartContainerRef.current) return
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (!chartRef.current || entries.length === 0) return
-      const { width } = entries[0].contentRect
-      chartRef.current.applyOptions({ width })
-    })
-
-    resizeObserver.observe(chartContainerRef.current)
-    return () => resizeObserver.disconnect()
-  }, [])
-
-  useEffect(() => {
     if (!chartRef.current) return
 
     const resolvedTextColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
@@ -145,6 +132,16 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     })
 
     chartRef.current = chart
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (!chartRef.current || entries.length === 0) return
+      const { width } = entries[0].contentRect
+      chartRef.current.applyOptions({ width })
+    })
+
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current)
+    }
 
     const palette = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']
 
@@ -220,9 +217,14 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     chart.subscribeCrosshairMove(onCrosshairMove)
 
     return () => {
+      resizeObserver.disconnect()
       chart.unsubscribeCrosshairMove(onCrosshairMove)
       onHoverTime?.(null)
       chart.remove()
+      chartRef.current = null
+      primarySeriesRef.current = null
+      hoverTimesRef.current = []
+      lastHoverTimeRef.current = null
     }
   }, [
     normalizedData,
