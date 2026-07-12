@@ -115,7 +115,7 @@ export const ChartPanel = React.memo(({
   }, [tradeMemo, rebalanceMemo, compareMode])
 
   const compareKey = useMemo(
-    () => `${chartKey}-${Object.keys(compareResults).join('-')}`,
+    () => `${chartKey}-${Object.keys(compareResults).sort().join('-')}`,
     [chartKey, compareResults],
   )
 
@@ -361,12 +361,12 @@ export const ChartPanel = React.memo(({
         ) : compareMode && Object.keys(compareResults).length > 0 ? (
           <div key={compareKey} className="w-full h-[400px]">
             <BacktestChart
-              series={Object.entries(compareResults).map(([id, res]: [string, any], idx: number) => {
+              series={Object.entries(compareResults).map(([id, res]: [string, BacktestResult], idx: number) => {
                 const isHighlighted = highlightStrategy === null || highlightStrategy === id;
                 return {
                   id,
                   name: getStrategyName(id),
-                  data: chartView === "equity" ? res.equity_curve : res.drawdown_curve,
+                  data: (chartView === "equity" ? res.equity_curve : res.drawdown_curve) ?? [],
                   color: comparePalette[idx % comparePalette.length],
                   lineWidth: isHighlighted ? 4 : 1,
                   opacity: isHighlighted ? 0.75 : 0.05,

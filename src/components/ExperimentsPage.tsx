@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useMarket } from '@/contexts/MarketContext'
 
-const API = 'http://127.0.0.1:8000'
+import { API_BASE as API } from '@/lib/api'
 
 interface Experiment {
   id: string
@@ -57,20 +57,24 @@ export const ExperimentsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalMarket])
 
-  const fetchExperiments = useCallback(async () => {
+  const fetchExperiments = useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
       if (filterStrategy) params.set('strategy_id', filterStrategy)
       if (filterMarket) params.set('market', filterMarket)
-      const res = await fetch(`${API}/experiments?${params}`)
+      const res = await fetch(`${API}/experiments?${params}`, { signal })
       if (res.ok) setExperiments(await res.json())
     } finally {
       setLoading(false)
     }
   }, [filterStrategy, filterMarket])
 
-  useEffect(() => { fetchExperiments() }, [fetchExperiments])
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchExperiments(controller.signal).catch(() => {})
+    return () => controller.abort()
+  }, [fetchExperiments])
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -179,7 +183,7 @@ export const ExperimentsPage = () => {
     <div className="space-y-4 p-4">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold">实验记录本</h2>
-        <Button variant="outline" size="sm" onClick={fetchExperiments} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => fetchExperiments()} disabled={loading}>
           {loading ? '加载中...' : '刷新'}
         </Button>
       </div>

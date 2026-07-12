@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SignalExplanationDrawer } from '@/components/SignalExplanationDrawer'
 import { useMarket } from '@/contexts/MarketContext'
-
-const API = 'http://127.0.0.1:8000'
+import { usePageVisible } from '@/hooks/usePageVisible'
+import { API_BASE as API } from '@/lib/api'
 
 interface SignalItem {
   ticker: string
@@ -90,6 +90,8 @@ export function SignalsPage() {
   const [rankingData, setRankingData] = useState<{ date: string; rankings: { rank: number; ticker: string; price: number | null; momentum: number | null; above_sma: boolean | null }[] } | null>(null)
   const [rankingLoading, setRankingLoading] = useState(false)
 
+  const pageVisible = usePageVisible()
+
   const fetchRanking = useCallback(async () => {
     setRankingLoading(true)
     try {
@@ -126,7 +128,6 @@ export function SignalsPage() {
   const [pulseData, setPulseData] = useState<PulseData | null>(null)
 
   const fetchPulse = useCallback(async () => {
-    // 从 signals signal.portfolio 提取符号列表
     if (!signalsData || !signalsData.signals || signalsData.signals.length === 0) return
     const symbols = signalsData.signals.map((s) => s.ticker)
     try {
@@ -136,16 +137,20 @@ export function SignalsPage() {
     } catch { /* pulse 静默失败 */ }
   }, [signalsData, market])
 
+  // 用 ref 保存最新 fetchPulse，避免 interval 因 fetchPulse 身份变化而重建
+  const fetchPulseRef = useRef(fetchPulse)
+  useEffect(() => { fetchPulseRef.current = fetchPulse }, [fetchPulse])
+
   // pulse 轮询: 每 45s 刷新一次盘中价格
   useEffect(() => {
     if (!signalsData || !signalsData.metadata?.has_live_quotes) {
       setPulseData(null)
       return
     }
-    fetchPulse()
-    const interval = setInterval(fetchPulse, 45000)
+    fetchPulseRef.current()
+    const interval = setInterval(() => fetchPulseRef.current(), 45000)
     return () => clearInterval(interval)
-  }, [signalsData, fetchPulse])
+  }, [signalsData])
 
   const fetchSignals = useCallback(async () => {
     setLoading(true)
@@ -173,15 +178,13 @@ export function SignalsPage() {
     }
   }, [strategyId, market])
 
-  const handleExplain = async (signal: SignalItem) => {
-    // If signal already has explanation attached, use it directly
+  const handleExplain = useCallback(async (signal: SignalItem) => {
     if (signal.explanation) {
       setSelectedSignal(signal)
       setDrawerOpen(true)
       return
     }
 
-    // Otherwise fetch from explain endpoint
     setDrawerLoading(true)
     setSelectedSignal({ ...signal, explanation: undefined })
     setDrawerOpen(true)
@@ -199,7 +202,7 @@ export function SignalsPage() {
     } finally {
       setDrawerLoading(false)
     }
-  }
+  }, [strategyId, market])
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-8 space-y-4">
@@ -286,7 +289,7 @@ export function SignalsPage() {
                           {(sig.weight * 100).toFixed(1)}%
                         </td>
                         <td className="py-2.5 pr-4 text-right font-mono">
-                          {sig.price.toFixed(2)}
+                          {sig.price?.toFixed(2) ?? '--'}
                         </td>
                         <td className="max-w-xs truncate py-2.5 pr-4 text-muted-foreground">
                           {sig.reason}
@@ -337,7 +340,7 @@ export function SignalsPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" style={{ animationPlayState: pageVisible ? 'running' : 'paused' }} />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                 </span>
                 盘中实时 {pulseData.market_open ? '● 交易中' : '○ 盘后'}
@@ -382,7 +385,7 @@ export function SignalsPage() {
                 <div className="flex flex-wrap gap-2">
                   {pulseData.enhancements.breakout_signals.slice(0, 10).map((bs) => (
                     <Badge
-                      key={bs.symbol}
+                      key={`${bs.symbol}:${bs.type}`}
                       variant={bs.type.includes('up') || bs.type === 'strong_up' ? 'default' : 'destructive'}
                       className="text-xs"
                     >

@@ -2,6 +2,7 @@
 import { cn } from '@/lib/utils'
 import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
+import { API_BASE } from '@/lib/api'
 import { useState, useEffect } from 'react'
 
 interface SidebarProps {
@@ -56,7 +57,7 @@ function DataStatusDot() {
   useEffect(() => {
     // 走真实健康汇总端点（含 market），按 healthy/stale/missing 计数判定新鲜度。
     const controller = new AbortController()
-    fetch(`http://127.0.0.1:8000/data/health/summary?market=${market}`, { signal: controller.signal })
+    fetch(`${API_BASE}/data/health/summary?market=${market}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data || !data.total) {

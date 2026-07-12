@@ -7,8 +7,7 @@ import { DataHealthDetailDrawer } from '@/components/DataHealthDetailDrawer'
 import { useMarket } from '@/contexts/MarketContext'
 import { requestCache } from '@/utils/requestCache'
 import { deduplicateRequest } from '@/utils/deduplicateRequest'
-
-const API = 'http://127.0.0.1:8000'
+import { API_BASE as API } from '@/lib/api'
 
 // ── 类型 ──────────────────────────────────────────────────────
 
@@ -75,7 +74,6 @@ export const DataHealthPage = memo(function DataHealthPage() {
   // ── 缓存帮助函数 ──────────────────────────────────────────
 
   const cachedFetch = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async <T,>(url: string, cacheKey: string, ttlMs = 60_000): Promise<T> => {
       const cached = requestCache.get<T>(cacheKey)
       if (cached) return cached as T

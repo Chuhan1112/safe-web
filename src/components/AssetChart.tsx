@@ -55,7 +55,6 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
   const isDark = useIsDark(theme)
   const isDarkRef = useRef(isDark)
   const seriesRefs = useRef<Map<string, ReturnType<IChartApi['addSeries']>>>(new Map())
-  const prevDataRef = useRef(data)
 
   useEffect(() => { isDarkRef.current = isDark }, [isDark])
 
@@ -65,16 +64,23 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
     )
   }, [])
 
+  // 首次挂载时从容器获取初始尺寸（后续 resize 不触发 re-render）
+  useEffect(() => {
+    if (!chartContainerRef.current) return
+    const rect = chartContainerRef.current.getBoundingClientRect()
+    if (rect.width > 0) setDimensions({ width: rect.width, height: rect.height || 400 })
+  }, [])
+
+  // 容器 resize 时只 applyOptions，不 setState，避免全量重渲染
   useEffect(() => {
     if (!chartContainerRef.current) return
     let resizeRaf: number | null = null
     const resizeObserver = new ResizeObserver((entries) => {
       if (entries.length === 0 || !entries[0].contentRect) return
       const { width, height } = entries[0].contentRect
-      if (width > 0) {
+      if (width > 0 && chartRef.current) {
         if (resizeRaf !== null) cancelAnimationFrame(resizeRaf)
         resizeRaf = requestAnimationFrame(() => {
-          setDimensions({ width, height: height || 400 })
           if (chartRef.current) chartRef.current.applyOptions({ width, height: height || 400 })
           resizeRaf = null
         })
@@ -100,10 +106,9 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
 
   useEffect(() => {
     if (dimensions.width === 0 || !chartContainerRef.current || !data || data.length === 0) return
-    if (data === prevDataRef.current && chartRef.current) return
-    prevDataRef.current = data
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null }
 
+    let chartCleanup: IChartApi | null = null
     try {
       const { textColor, gridColor, borderColor } = getChartTheme(isDarkRef.current)
       const chart = createChart(chartContainerRef.current, {
@@ -125,7 +130,7 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
         },
         rightPriceScale: { borderColor },
       })
-      chartRef.current = chart
+      chartCleanup = chart
 
       const normalized = data
         .map((item) => {
@@ -136,10 +141,14 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
         })
         .filter(Boolean) as Array<AssetChartProps['data'][number] & { iso: string; businessDay: BusinessDay }>
 
-      if (normalized.length === 0) return
+      if (normalized.length === 0) { chart.remove(); chartCleanup = null; return }
 
       const byIso = new Map<string, typeof normalized[number]>()
-      normalized.forEach((item) => byIso.set(item.iso, item))
+      const isoIndexMap = new Map<string, number>()
+      normalized.forEach((item, i) => {
+        byIso.set(item.iso, item)
+        isoIndexMap.set(item.iso, i)
+      })
 
       const candleSeries = chart.addSeries(CandlestickSeries, {
         upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
@@ -190,7 +199,7 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
         const row = byIso.get(iso)
         if (!row) { setHoverInfo(null); return }
 
-        const idx = normalized.findIndex((item) => item.iso === iso)
+        const idx = isoIndexMap.get(iso) ?? -1
         const prevRow = idx > 0 ? normalized[idx - 1] : null
         const changePct = prevRow && prevRow.close !== 0
           ? ((row.close - prevRow.close) / prevRow.close) * 100
@@ -213,9 +222,15 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
       })
 
       chart.timeScale().fitContent()
+      chartRef.current = chart
 
       return () => { chart.remove(); chartRef.current = null; seriesRefs.current.clear() }
-    } catch (error) { console.error('Failed to create asset chart', error) }
+    } catch (error) {
+      if (chartCleanup) chartCleanup.remove()
+      chartRef.current = null
+      seriesRefs.current.clear()
+      console.error('Failed to create asset chart', error)
+    }
   }, [data, dimensions.width, dimensions.height])
 
   useEffect(() => {

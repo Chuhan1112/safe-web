@@ -7,8 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { useMarket } from '@/contexts/MarketContext'
 import { cn } from '@/lib/utils'
 import { Search, FileText, AlertTriangle, RefreshCw, HelpCircle, ExternalLink, Calendar, Layers, Target, WifiOff } from 'lucide-react'
-
-const API_BASE = 'http://127.0.0.1:8000'
+import { API_BASE } from '@/lib/api'
 
 export function ResearchPage() {
   const { market } = useMarket()
@@ -18,7 +17,8 @@ export function ResearchPage() {
   const [apiAvailable, setApiAvailable] = useState(false)
 
   useEffect(() => {
-    fetch(`${API_BASE}/research?market=${market}`)
+    const controller = new AbortController()
+    fetch(`${API_BASE}/research?market=${market}`, { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
         if (data.reports?.length > 0) {
@@ -27,9 +27,17 @@ export function ResearchPage() {
         }
       })
       .catch(() => {
-        // API unavailable, keep mock data
+        // API unavailable or aborted, keep mock data
       })
-  }, [])
+    return () => controller.abort()
+  }, [market])
+
+  // API 返回新数据后，若 selectedId 不在新列表中，重置到第一条
+  useEffect(() => {
+    if (reports.length > 0 && !reports.some(r => r.id === selectedId)) {
+      setSelectedId(reports[0]?.id ?? '')
+    }
+  }, [reports, selectedId])
 
   const filtered = reports.filter(r => {
     const q = search.toLowerCase()

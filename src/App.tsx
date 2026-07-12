@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { SafeWorkspace } from '@/components/SafeWorkspace'
 import {
@@ -7,32 +7,24 @@ import {
   loadPrivateOverlay,
 } from '@/lib/privateOverlay'
 import type { ComponentType } from 'react'
-import type { PrivateOverlayMeta } from '@/types/privateOverlay'
 import { MarketProvider } from '@/contexts/MarketContext'
-
-const defaultPrivateMeta: Required<PrivateOverlayMeta> = {
-  label: 'Local Overlay',
-  description: 'Trusted-machine-only workspace.',
-  preferredView: 'private',
-}
 
 function App() {
   const privateOverlayEnabled = isPrivateOverlayEnabled()
   const privateOverlayPresent = hasPrivateOverlayModule()
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof document !== 'undefined') {
-      if (document.documentElement.classList.contains('light')) return 'light'
-      if (document.documentElement.classList.contains('dark')) return 'dark'
-    }
     if (typeof localStorage !== 'undefined') {
       const savedTheme = localStorage.getItem('theme')
       if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme
+    }
+    if (typeof document !== 'undefined') {
+      if (document.documentElement.classList.contains('light')) return 'light'
+      if (document.documentElement.classList.contains('dark')) return 'dark'
     }
     return 'dark'
   })
   const [activeView, setActiveView] = useState('backtest')
   const [privateComponent, setPrivateComponent] = useState<ComponentType | null>(null)
-  const [, setPrivateMeta] = useState(defaultPrivateMeta)
   const [privateLoadState, setPrivateLoadState] = useState<'idle' | 'loading' | 'ready'>(
     privateOverlayEnabled && privateOverlayPresent ? 'loading' : 'idle',
   )
@@ -43,10 +35,14 @@ function App() {
           : privateLoadState === 'loading' ? 'loading'
             : 'missing'
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof document === 'undefined') return
     document.documentElement.classList.remove('light', 'dark')
     document.documentElement.classList.add(theme)
+  }, [theme])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
     localStorage.setItem('theme', theme)
   }, [theme])
 
@@ -69,9 +65,8 @@ function App() {
       .then((module) => {
         if (cancelled || !module) return
         setPrivateComponent(() => module.default)
-        setPrivateMeta({ ...defaultPrivateMeta, ...module.overlayMeta })
         setPrivateLoadState('ready')
-        if ((module.overlayMeta?.preferredView ?? defaultPrivateMeta.preferredView) === 'private') {
+        if (module.overlayMeta?.preferredView === 'private') {
           setActiveView('private')
         }
       })
@@ -96,9 +91,8 @@ function App() {
         onThemeToggle={() => setTheme((v) => (v === 'dark' ? 'light' : 'dark'))}
         canOpenPrivate={!!canOpenPrivate}
         onNavigateToPrivate={(tab) => {
-          if (canOpenPrivate) {
-            window.dispatchEvent(new CustomEvent('cortex:navigate', { detail: { tab } }))
-          }
+          if (!canOpenPrivate) return
+          window.dispatchEvent(new CustomEvent('cortex:navigate', { detail: { tab } }))
           setActiveView('private')
         }}
       />

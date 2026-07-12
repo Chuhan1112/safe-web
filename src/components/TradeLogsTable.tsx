@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useMemo, Fragment, useEffect, useRef } from 'react'
+import { memo, useState, useCallback, useMemo, useEffect, useRef, Fragment } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TickerLink } from '@/components/TickerLink'
 import { ActionFilter } from '@/components/ActionFilter'
@@ -90,20 +90,20 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [highlightDate])
 
-  const badgeLabel = useCallback((reason: string) => {
+  const badgeLabel = (reason: string) => {
     if (!reason) return '--'
     if (reason.includes('Entry')) return '建仓'
     if (reason.includes('Exit')) return '离场'
     if (reason.includes('End of Period')) return '平仓'
     if (reason.includes('Rebalance')) return '调仓'
     return reason.length > 12 ? reason.slice(0, 12) + '…' : reason
-  }, [])
+  }
 
-  const badgeStyle = useCallback((reason: string, action: string) => {
+  const badgeStyle = (reason: string, action: string) => {
     if (reason.includes('Entry') || action === 'BUY') return 'text-emerald-500/70 border-emerald-500/20 bg-emerald-500/[0.04]'
     if (reason.includes('Exit') || reason.includes('Stop') || reason.includes('End of Period') || action === 'SELL') return 'text-rose-500/70 border-rose-500/20 bg-rose-500/[0.04]'
     return 'text-muted-foreground/50 border-border/50'
-  }, [])
+  }
 
   return (
     <div ref={tableRef} className="max-w-[1100px] mx-auto w-full px-4">
@@ -160,11 +160,12 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {buys.map((log, idx) => {
+                            {buys.map((log) => {
                               const ticker = String(log.Ticker || '')
                               const name = log.TickerName || ticker
+                              const key = `buy|${String(log.Date ?? '')}|${ticker}|${log.Action ?? ''}|${log.Price ?? ''}`
                               return (
-                                <span key={`buy-${ticker}-${idx}`} className="inline-flex items-center gap-1.5 rounded-md border border-green-200/30 bg-green-500/5 px-2 py-0.5">
+                                <span key={key} className="inline-flex items-center gap-1.5 rounded-md border border-green-200/30 bg-green-500/5 px-2 py-0.5">
                                   <span className="text-[11px] font-bold tracking-tight uppercase">
                                     <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
                                   </span>
@@ -187,13 +188,13 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {continuingHoldings.map((h: string, idx: number) => {
+                            {continuingHoldings.map((h: string) => {
                               const ticker = h.split('(')[0].trim()
                               const display = names[ticker] || ticker
                               const pct = h.match(/\((.*)\)/)?.[1] || '--'
                               const px = holdingsDetail?.[ticker]?.price
                               return (
-                                <span key={`cont-${ticker}-${idx}`} className="relative inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/80 px-2 py-0.5">
+                                <span key={h} className="relative inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/80 px-2 py-0.5">
                                   <span className="text-[11px] font-bold tracking-tight uppercase">
                                     <TickerLink ticker={ticker} displayName={display} onClick={() => handleTickerClick(ticker)} />
                                   </span>
@@ -216,12 +217,13 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {sells.map((log, idx) => {
+                            {sells.map((log) => {
                               const ticker = String(log.Ticker || '')
                               const name = log.TickerName || ticker
                               const pnl = Number(log.PnL) || 0
+                              const key = `sell|${String(log.Date ?? '')}|${ticker}|${log.Action ?? ''}|${log.Price ?? ''}`
                               return (
-                                <span key={`sell-${ticker}-${idx}`} className="inline-flex items-center gap-1.5 rounded-md border border-red-200/30 bg-red-500/5 px-2 py-0.5">
+                                <span key={key} className="inline-flex items-center gap-1.5 rounded-md border border-red-200/30 bg-red-500/5 px-2 py-0.5">
                                   <span className="text-[11px] font-bold tracking-tight uppercase text-red-600/80">
                                     <TickerLink ticker={ticker} displayName={name} onClick={() => handleTickerClick(ticker)} />
                                   </span>
@@ -282,12 +284,12 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                         <div>
                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">持仓快照</span>
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {holdings.length > 0 ? holdings.map((h: string, idx: number) => {
+                            {holdings.length > 0 ? holdings.map((h: string) => {
                               const ticker = h.split('(')[0].trim()
                               const display = names[ticker] || ticker
                               const pct = h.match(/\((.*)\)/)?.[1] || '--'
                               return (
-                                <span key={idx} className="rounded-md border border-border/50 bg-background/50 px-2 py-1 text-xs font-mono">
+                                <span key={h} className="rounded-md border border-border/50 bg-background/50 px-2 py-1 text-xs font-mono">
                                   {display} — {pct}
                                 </span>
                               )
@@ -309,7 +311,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                         <div>
                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">操作明细</span>
                           <div className="mt-2 flex flex-col gap-1.5">
-                            {trades.map((log, idx) => {
+                            {trades.map((log) => {
                               const ticker = String(log.Ticker || '')
                               const name = log.TickerName || ticker
                               const action = log.Action
@@ -317,8 +319,9 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                               const bs = badgeStyle(log.Reason || '', action)
                               const isBuy = action === 'BUY'
                               const pnl = Number(log.PnL) || 0
+                              const key = `trade|${String(log.Date ?? '')}|${ticker}|${action}|${log.Price ?? ''}|${log.Shares ?? ''}`
                               return (
-                                <div key={idx} className="flex items-center gap-2 text-xs">
+                                <div key={key} className="flex items-center gap-2 text-xs">
                                   <span className={cn(
                                     "inline-flex items-center px-1.5 py-0 rounded-[3px] text-[9px] font-bold tracking-[0.04em] w-8 justify-center border uppercase",
                                     isBuy ? "text-emerald-500/70 border-emerald-500/20 bg-emerald-500/[0.04]"

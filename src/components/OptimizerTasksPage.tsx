@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { OptimizerTaskTable, type OptimizerTask } from '@/components/OptimizerTaskTable'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
+import { useMarket } from '@/contexts/MarketContext'
+import { API_BASE } from '@/lib/api'
 
-const API_BASE = 'http://127.0.0.1:8000'
 const POLL_INTERVAL_MS = 3000
 
 function hasRunningTasks(tasks: OptimizerTask[]): boolean {
@@ -11,6 +12,7 @@ function hasRunningTasks(tasks: OptimizerTask[]): boolean {
 }
 
 export function OptimizerTasksPage() {
+  const { market } = useMarket()
   const [tasks, setTasks] = useState<OptimizerTask[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +20,7 @@ export function OptimizerTasksPage() {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/backtest/optimize/tasks`)
+      const res = await fetch(`${API_BASE}/backtest/optimize/tasks?market=${market}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data: OptimizerTask[] = await res.json()
       setTasks(data)
@@ -28,7 +30,7 @@ export function OptimizerTasksPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [market])
 
   // Initial fetch
   useEffect(() => {

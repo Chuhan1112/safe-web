@@ -46,8 +46,8 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
     try {
       const res = await fetchData(symbol, lookback, market)
       setData(res)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
@@ -69,16 +69,21 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
         <DialogHeader className="border-b border-border pb-4">
           <DialogTitle className="flex items-center gap-4">
             <span className="text-2xl font-mono font-bold tracking-tight">{ticker}</span>
-            {data && (
+            {(() => {
+              const changePct: number | null = data?.change_percent ?? null
+              const isPositive = changePct != null && changePct >= 0
+              const changeSign = changePct != null && changePct > 0 ? '+' : ''
+              return data ? (
                 <div className="flex items-center gap-3">
-                  <span className={`text-xl font-mono font-medium ${data.change_percent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`text-xl font-mono font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
                       {currencySymbol}{data.current_price?.toFixed(2)}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded font-mono font-medium ${data.change_percent >= 0 ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
-                      {data.change_percent > 0 ? '+' : ''}{data.change_percent?.toFixed(2)}%
+                  <span className={`text-xs px-2 py-0.5 rounded font-mono font-medium ${isPositive ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+                      {changeSign}{changePct?.toFixed(2)}%
                   </span>
                 </div>
-            )}
+              ) : null
+            })()}
             <a
                 href={tradingViewUrl}
                 target="_blank"
