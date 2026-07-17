@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, memo } from 'react'
 import {
   AreaSeries,
   ColorType,
@@ -37,12 +37,16 @@ interface ChartProps {
 const EMPTY_DATA: { time: string; value: number }[] = []
 const EMPTY_SERIES: ChartSeries[] = []
 
-export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }: ChartProps) => {
-  const normalizedData = data ?? EMPTY_DATA
-  const normalizedSeries = series ?? EMPTY_SERIES
+// 模块级调色板常量，避免每次渲染创建新数组
+const DEFAULT_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']
+
+const BacktestChartInner = ({ data, series, onHoverTime, colors = {}, theme }: ChartProps) => {
+  const normalizedData = useMemo(() => data ?? EMPTY_DATA, [data])
+  const normalizedSeries = useMemo(() => series ?? EMPTY_SERIES, [series])
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const primarySeriesRef = useRef<ISeriesApi<'Area'> | null>(null)
+  const seriesRefsRef = useRef<ISeriesApi<'Area'>[]>([])
   const lastHoverTimeRef = useRef<string | null>(null)
   const hoverTimesRef = useRef<string[]>([])
   const isDark = useIsDark(theme)
@@ -110,6 +114,7 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     })
   }, [colors.textColor, isDark])
 
+  // Effect 1: 创建图表 + ResizeObserver（颜色变化时重建图表）
   useEffect(() => {
     if (!chartContainerRef.current) return
 
@@ -143,14 +148,35 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
       resizeObserver.observe(chartContainerRef.current)
     }
 
-    const palette = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']
+    return () => {
+      resizeObserver.disconnect()
+      chart.remove()
+      chartRef.current = null
+      primarySeriesRef.current = null
+      seriesRefsRef.current = []
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backgroundColor, lineColor, textColor, areaTopColor, areaBottomColor])
+
+  // Effect 2: 序列数据管理 + 十字线订阅（数据或 emitHover 变化时更新）
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart) return
+
+    // 移除旧序列
+    seriesRefsRef.current.forEach(s => {
+      try { chart.removeSeries(s) } catch { /* 图表可能已被销毁 */ }
+    })
+    seriesRefsRef.current = []
+    primarySeriesRef.current = null
 
     if (normalizedSeries.length > 0) {
       hoverTimesRef.current = (normalizedSeries[0]?.data || []).map((item) =>
         normalizeDateString(String(item.time)),
       )
+      const newSeries: ISeriesApi<'Area'>[] = []
       normalizedSeries.forEach((seriesItem, index) => {
-        const color = seriesItem.color || palette[index % palette.length]
+        const color = seriesItem.color || DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
         const opacity = seriesItem.opacity ?? 0.4
         const lineWidthValue = seriesItem.lineWidth ?? 2
         const nextSeries = chart.addSeries(AreaSeries, {
@@ -165,22 +191,24 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
         if (index === 0) {
           primarySeriesRef.current = nextSeries
         }
+        newSeries.push(nextSeries)
       })
+      seriesRefsRef.current = newSeries
       chart.timeScale().fitContent()
     } else {
       hoverTimesRef.current = normalizedData.map((item) => normalizeDateString(String(item.time)))
-      const nextSeries = chart.addSeries(AreaSeries, {
-        lineColor,
-        topColor: areaTopColor,
-        bottomColor: areaBottomColor,
-        lineWidth: 2,
-      })
-
       if (normalizedData.length > 0) {
+        const nextSeries = chart.addSeries(AreaSeries, {
+          lineColor,
+          topColor: areaTopColor,
+          bottomColor: areaBottomColor,
+          lineWidth: 2,
+        })
         nextSeries.setData(normalizedData)
+        primarySeriesRef.current = nextSeries
+        seriesRefsRef.current = [nextSeries]
         chart.timeScale().fitContent()
       }
-      primarySeriesRef.current = nextSeries
     }
 
     const onCrosshairMove = (param: MouseEventParams<Time>) => {
@@ -217,26 +245,13 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     chart.subscribeCrosshairMove(onCrosshairMove)
 
     return () => {
-      resizeObserver.disconnect()
-      chart.unsubscribeCrosshairMove(onCrosshairMove)
+      // 捕获闭包中的 chart 引用，避免清理时操作已被替换的图表
+      try { chart.unsubscribeCrosshairMove(onCrosshairMove) } catch { /* 图表可能已被移除 */ }
       onHoverTime?.(null)
-      chart.remove()
-      chartRef.current = null
-      primarySeriesRef.current = null
       hoverTimesRef.current = []
       lastHoverTimeRef.current = null
     }
-  }, [
-    normalizedData,
-    normalizedSeries,
-    emitHover,
-    backgroundColor,
-    lineColor,
-    textColor,
-    areaTopColor,
-    areaBottomColor,
-    onHoverTime,
-  ])
+  }, [normalizedData, normalizedSeries, emitHover, onHoverTime, lineColor, areaTopColor, areaBottomColor])
 
   return (
     <div
@@ -247,3 +262,6 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
     />
   )
 }
+
+// React.memo 避免父组件渲染时无 props 变化的子组件重渲染
+export const BacktestChart = memo(BacktestChartInner)
