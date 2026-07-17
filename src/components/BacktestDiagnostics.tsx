@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronDown, ChevronRight, Info } from 'lucide-react'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -39,7 +39,7 @@ const COMMON_ISSUES = [
   },
 ]
 
-export function BacktestDiagnostics({ metrics }: BacktestDiagnosticsProps) {
+const BacktestDiagnosticsInner = ({ metrics }: BacktestDiagnosticsProps) => {
   const [open, setOpen] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
 
@@ -113,3 +113,6 @@ export function BacktestDiagnostics({ metrics }: BacktestDiagnosticsProps) {
     </Card>
   )
 }
+
+// React.memo 避免父组件渲染时无 props 变化导致子组件重渲染
+export const BacktestDiagnostics = memo(BacktestDiagnosticsInner)
