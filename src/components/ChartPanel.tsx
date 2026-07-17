@@ -31,6 +31,9 @@ interface ChartPanelT {
   no_data: string
 }
 
+// 模块级常量，避免每次渲染创建新对象导致 React.memo 失效
+const TRANSPARENT_COLORS = { backgroundColor: 'transparent' } as const
+
 interface ChartPanelProps {
   result: BacktestResult | null;
   compareMode: boolean;
@@ -117,6 +120,22 @@ export const ChartPanel = React.memo(({
   const compareKey = useMemo(
     () => `${chartKey}-${Object.keys(compareResults).sort().join('-')}`,
     [chartKey, compareResults],
+  )
+
+  // 对比模式 series 数组 useMemo 化，避免每次渲染创建新引用导致 BacktestChart 重绘
+  const compareSeries = useMemo(() =>
+    Object.entries(compareResults).map(([id, res]: [string, BacktestResult], idx: number) => {
+      const isHighlighted = highlightStrategy === null || highlightStrategy === id
+      return {
+        id,
+        name: getStrategyName(id),
+        data: (chartView === 'equity' ? res.equity_curve : res.drawdown_curve) ?? [],
+        color: comparePalette[idx % comparePalette.length],
+        lineWidth: (isHighlighted ? 4 : 1) as 1 | 2 | 3 | 4,
+        opacity: isHighlighted ? 0.75 : 0.05,
+      }
+    }),
+    [compareResults, chartView, comparePalette, highlightStrategy, getStrategyName],
   )
 
   const hoveredSnapshot = useMemo(() => {
@@ -361,18 +380,8 @@ export const ChartPanel = React.memo(({
         ) : compareMode && Object.keys(compareResults).length > 0 ? (
           <div key={compareKey} className="w-full h-[400px]">
             <BacktestChart
-              series={Object.entries(compareResults).map(([id, res]: [string, BacktestResult], idx: number) => {
-                const isHighlighted = highlightStrategy === null || highlightStrategy === id;
-                return {
-                  id,
-                  name: getStrategyName(id),
-                  data: (chartView === "equity" ? res.equity_curve : res.drawdown_curve) ?? [],
-                  color: comparePalette[idx % comparePalette.length],
-                  lineWidth: isHighlighted ? 4 : 1,
-                  opacity: isHighlighted ? 0.75 : 0.05,
-                };
-              })}
-              colors={{ backgroundColor: 'transparent' }}
+              series={compareSeries}
+              colors={TRANSPARENT_COLORS}
             />
           </div>
         ) : result ? (
@@ -380,7 +389,7 @@ export const ChartPanel = React.memo(({
             <BacktestChart
               data={chartView === "equity" ? result.equity_curve : result.drawdown_curve}
               onHoverTime={setHoveredTime}
-              colors={{ backgroundColor: 'transparent' }}
+              colors={TRANSPARENT_COLORS}
             />
           </div>
         ) : (

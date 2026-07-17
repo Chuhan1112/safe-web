@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense, useEffect } from 'react'
+import { useState, useMemo, useCallback, lazy, Suspense, useEffect } from 'react'
 import { MetricsGrid } from '@/components/MetricsGrid'
 import { TradeLogsTable } from '@/components/TradeLogsTable'
 import { RebalanceLogsTable } from '@/components/RebalanceLogsTable'
@@ -33,6 +33,37 @@ interface SafeWorkspaceProps {
 
 const bottomTabs = ['Metrics', 'Trades', 'Rebalance'] as const
 
+// 模块级常量，避免每次渲染创建新对象/数组触发子组件无谓重渲染
+const TRADE_T = {
+  action: 'Action',
+  symbol: 'Symbol',
+  price: 'Price',
+  reason: 'Reason',
+  date: 'Date',
+  portfolio_value: 'Value',
+  buy: 'Buy',
+  sold: 'Sell',
+  holds: 'Hold',
+  cash_weight: 'Cash',
+} as const
+
+const REBALANCE_T = {
+  date: 'Date',
+  portfolio_value: 'Value',
+  selected_assets: 'Assets',
+  weights: 'Weights',
+  buy: 'Buy',
+  holds: 'Hold',
+  sold: 'Sold',
+  empty_position: 'Empty',
+  cash_weight: 'Cash',
+} as const
+
+const WORKSPACE_COMPARE_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']
+
+// 模块级常量，避免每次渲染创建新对象导致 React.memo 失效
+const TRANSPARENT_COLORS = { backgroundColor: 'transparent' } as const
+
 export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
   const { market } = useMarket()
   const [chartView, setChartView] = useState<'equity' | 'drawdown'>('equity')
@@ -45,6 +76,9 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
     setLoading(false)
     setHoveredDate(null)
   }, [market])
+
+  // useCallback 稳定化，避免每次渲染创建新函数导致 BacktestChart 重渲染
+  const handleHoverTime = useCallback((time: string | null) => setHoveredDate(time), [])
 
   const metrics = useMemo(() => [
     { label: 'CAGR', value: mockBacktestMetrics.cagr, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-emerald-500' },
@@ -137,8 +171,8 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
               <div className="w-full h-[400px]">
                 <BacktestChart
                   data={chartView === 'equity' ? mockEquityCurve : mockDrawdownCurve}
-                  onHoverTime={(time: string | null) => setHoveredDate(time)}
-                  colors={{ backgroundColor: 'transparent' }}
+                  onHoverTime={handleHoverTime}
+                  colors={TRANSPARENT_COLORS}
                 />
               </div>
             </Suspense>
@@ -198,8 +232,8 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
             <TradeLogsTable
               logs={mockTradeLogs}
               logFilter=""
-              t={{ action: 'Action', symbol: 'Symbol', price: 'Price', reason: 'Reason', date: 'Date', portfolio_value: 'Value', buy: 'Buy', sold: 'Sell', holds: 'Hold', cash_weight: 'Cash' }}
-              comparePalette={['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']}
+              t={TRADE_T}
+              comparePalette={WORKSPACE_COMPARE_PALETTE}
               handleTickerClick={(t) => console.log('click', t)}
               highlightDate={hoveredDate}
               market={market}
@@ -209,9 +243,9 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
             <RebalanceLogsTable
               logs={mockRebalanceLogs}
               logFilter=""
-              t={{ date: 'Date', portfolio_value: 'Value', selected_assets: 'Assets', weights: 'Weights', buy: 'Buy', holds: 'Hold', sold: 'Sold', empty_position: 'Empty', cash_weight: 'Cash' }}
+              t={REBALANCE_T}
               handleTickerClick={(t) => console.log('click', t)}
-              comparePalette={['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']}
+              comparePalette={WORKSPACE_COMPARE_PALETTE}
               highlightDate={hoveredDate}
               market={market}
             />
