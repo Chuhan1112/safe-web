@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 export type Market = 'US' | 'CN'
@@ -13,8 +13,11 @@ const MarketContext = createContext<MarketContextValue | null>(null)
 export function MarketProvider({ children }: { children: ReactNode }) {
   const [market, setMarket] = useLocalStorage<Market>('cortex:market', 'US')
 
+  // value 对象 useMemo 化，避免每次渲染创建新引用导致所有 consumer 重渲染
+  const value = useMemo<MarketContextValue>(() => ({ market, setMarket }), [market, setMarket])
+
   return (
-    <MarketContext.Provider value={{ market, setMarket }}>
+    <MarketContext.Provider value={value}>
       {children}
     </MarketContext.Provider>
   )
