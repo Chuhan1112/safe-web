@@ -1,6 +1,6 @@
 import { CandlestickSeries, ColorType, createChart, LineSeries } from 'lightweight-charts'
 import type { BusinessDay, IChartApi, MouseEventParams, Time } from 'lightweight-charts'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, memo } from 'react'
 import { useIsDark } from '@/hooks/useIsDark'
 import { timeToIso, toBusinessDate } from '@/utils/chartHoverLogic'
 import { FloatingTooltip, type TooltipData } from '@/components/FloatingTooltip'
@@ -46,7 +46,7 @@ const indicatorLabelMap: Record<string, { label: string; color: string }> = {
   bb_lower: { label: 'BB Lower', color: '#a855f7' },
 }
 
-export const AssetChart = ({ data, theme }: AssetChartProps) => {
+const AssetChartInner = ({ data, theme }: AssetChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 400 })
@@ -230,6 +230,7 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
       chartRef.current = null
       seriesRefs.current.clear()
       console.error('Failed to create asset chart', error)
+      throw error
     }
   }, [data, dimensions.width, dimensions.height])
 
@@ -253,3 +254,6 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
     </div>
   )
 }
+
+// React.memo 避免父组件渲染时无 props 变化导致子组件重渲染
+export const AssetChart = memo(AssetChartInner)
