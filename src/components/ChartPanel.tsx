@@ -7,9 +7,21 @@ import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { ChartSkeleton } from '@/components/skeletons/ChartSkeleton';
 import { cn, formatPrice } from "@/lib/utils";
 
+interface LogRow {
+  Date?: string
+  [key: string]: unknown
+}
+
+interface SnapshotActionRow {
+  ticker: string
+  name: string
+  action: string
+  price: number
+}
+
 interface BacktestResult {
-  trade_logs?: Record<string, any>[]
-  logs?: Record<string, any>[]
+  trade_logs?: LogRow[]
+  logs?: LogRow[]
   equity_curve?: { time: string; value: number }[]
   drawdown_curve?: { time: string; value: number }[]
   metrics?: { cagr?: number }
@@ -161,8 +173,8 @@ export const ChartPanel = React.memo(({
       
       const actionOrder: Record<string, number> = { 'SELL': 0, 'HOLD': 1, 'BUY': 2 };
       const actionRows = rows
-        .filter((row: any) => row?.Ticker)
-        .map((row: any) => ({
+        .filter((row: LogRow) => row?.Ticker)
+        .map((row: LogRow) => ({
           ticker: String(row.Ticker),
           name: names[String(row.Ticker)] || String(row.Ticker),
           action: String(row.Action || ''),
@@ -225,7 +237,7 @@ export const ChartPanel = React.memo(({
 
   useEffect(() => {
     setHoveredTime(null);
-  }, [result, compareMode, chartView]);
+  }, [result, compareMode, chartView, setHoveredTime]);
 
   return (
     <Card className="border-border bg-card/50 overflow-hidden min-h-[400px] shadow-sm flex flex-col">
@@ -321,7 +333,7 @@ export const ChartPanel = React.memo(({
                       );
                     })}
                     {hoveredSnapshot.holdings.length > 8 && (
-                      <span className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-2xs text-muted-foreground/60 border border-border/20">
+                      <span className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-2xs font-mono font-medium tabular-nums text-muted-foreground/60 border border-border/20">
                         +{hoveredSnapshot.holdings.length - 8}
                       </span>
                     )}
@@ -338,11 +350,11 @@ export const ChartPanel = React.memo(({
                 </div>
                 {hoveredSnapshot.actions && hoveredSnapshot.actions.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {hoveredSnapshot.actions.map((row: any, idx: number) => (
+                    {hoveredSnapshot.actions.map((row: SnapshotActionRow, idx: number) => (
                       <span
                         key={`${row.ticker}-${idx}`}
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-2xs font-mono border shadow-sm",
+                          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-2xs font-mono tabular-nums border shadow-sm",
                           row.action === "BUY"
                             ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : row.action === "SELL"
@@ -358,7 +370,7 @@ export const ChartPanel = React.memo(({
                           <Minus className="h-3 w-3" />
                         )}
                         <span className="font-bold tracking-tight">{row.name || row.ticker}</span>
-                        <span className="opacity-60">{formatPrice(row.price, currencySymbol)}</span>
+                        <span className="opacity-60 font-mono font-medium tabular-nums">{formatPrice(row.price, currencySymbol)}</span>
                       </span>
                     ))}
                   </div>

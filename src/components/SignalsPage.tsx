@@ -5,12 +5,15 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { Alert } from '@/components/Alert'
+import { TableSkeleton } from '@/components/skeletons/TableSkeleton'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SignalExplanationDrawer } from '@/components/SignalExplanationDrawer'
 import { useMarket } from '@/contexts/MarketContext'
 import { usePageVisible } from '@/hooks/usePageVisible'
 import { useMarketColors } from '@/hooks/useMarketColors'
 import { usePolling } from '@/hooks/usePolling'
-import { API_BASE as API } from '@/lib/api'
+import { api } from '@/lib/api/client'
 
 interface SignalItem {
   ticker: string
@@ -94,16 +97,23 @@ export function SignalsPage() {
   // 动量排名仪表盘
   const [rankingData, setRankingData] = useState<{ date: string; rankings: { rank: number; ticker: string; price: number | null; momentum: number | null; above_sma: boolean | null }[] } | null>(null)
   const [rankingLoading, setRankingLoading] = useState(false)
+  const [rankingError, setRankingError] = useState<string | null>(null)
 
   const pageVisible = usePageVisible()
 
   const fetchRanking = useCallback(async () => {
     setRankingLoading(true)
+    setRankingError(null)
     try {
-      const res = await fetch(`${API}/signals/momentum-ranking?market=${market}&top_n=20`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setRankingData(await res.json())
-    } catch { setRankingData(null) } finally { setRankingLoading(false) }
+      const data = await api.get<{
+        date: string
+        rankings: { rank: number; ticker: string; price: number | null; momentum: number | null; above_sma: boolean | null }[]
+      }>('/signals/momentum-ranking', { market, top_n: 20 })
+      setRankingData(data)
+    } catch {
+      setRankingData(null)
+      setRankingError('动量排名加载失败，请稍后重试')
+    } finally { setRankingLoading(false) }
   }, [market])
 
   // 切市场时清空旧信号结果 + 当前策略不在新市场列表时重置
@@ -114,7 +124,7 @@ export function SignalsPage() {
     if (!strategies.includes(strategyId)) {
       setStrategyId(strategies[0])
     }
-  }, [market])
+  }, [market, strategyId])
 
   // ── 盘中脉冲轮询 ──
   interface PulseData {
@@ -136,9 +146,11 @@ export function SignalsPage() {
     if (!signalsData || !signalsData.signals || signalsData.signals.length === 0) return
     const symbols = signalsData.signals.map((s) => s.ticker)
     try {
-      const res = await fetch(`${API}/signals/live/pulse?symbols=${symbols.join(',')}&market=${market}`)
-      if (!res.ok) return
-      setPulseData(await res.json())
+      const data = await api.get<PulseData>('/signals/live/pulse', {
+        symbols: symbols.join(','),
+        market,
+      })
+      setPulseData(data)
     } catch { /* pulse 静默失败 */ }
   }, [signalsData, market])
 
@@ -167,20 +179,11 @@ export function SignalsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API}/signals/live`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          strategy_id: strategyId,
-          market,
-          force_sync: true,
-        }),
+      const data = await api.post<SignalsResponse>('/signals/live', {
+        strategy_id: strategyId,
+        market,
+        force_sync: true,
       })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ detail: res.statusText }))
-        throw new Error(body.detail || `HTTP ${res.status}`)
-      }
-      const data: SignalsResponse = await res.json()
       setSignalsData(data)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
@@ -201,12 +204,17 @@ export function SignalsPage() {
     setDrawerOpen(true)
 
     try {
-      const params = new URLSearchParams({ strategy_id: strategyId, market })
-      const res = await fetch(`${API}/signals/explain/${signal.ticker}?${params}`)
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`)
-      }
-      const explanation = await res.json()
+      const params = { strategy_id: strategyId, market }
+      const explanation = await api.get<{
+        ticker: string
+        action: string
+        summary: string
+        regime: string | null
+        passed_conditions: { name: string; label: string; passed: boolean }[]
+        failed_conditions: { name: string; label: string; passed: boolean }[]
+        factor_contributions: { name: string; label: string; score: number; weight: number }[]
+        risk_notes: string[]
+      }>(`/signals/explain/${signal.ticker}`, params)
       setSelectedSignal({ ...signal, explanation: { ...explanation, ticker: signal.ticker, action: signal.action } })
     } catch {
       setSelectedSignal({ ...signal, explanation: undefined })
@@ -246,11 +254,7 @@ export function SignalsPage() {
       </Card>
 
       {/* Error */}
-      {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <Alert variant="error" title="信号生成失败" description={error} />}
 
       {/* Signals Table */}
       {signalsData && (
@@ -297,10 +301,10 @@ export function SignalsPage() {
                             {sig.action}
                           </Badge>
                         </td>
-                        <td className="py-2.5 pr-4 text-right font-mono">
+                        <td className="py-2.5 pr-4 text-right font-mono text-xs font-medium tabular-nums">
                           {sig.weight != null ? (sig.weight * 100).toFixed(1) + '%' : '--'}
                         </td>
-                        <td className="py-2.5 pr-4 text-right font-mono">
+                        <td className="py-2.5 pr-4 text-right font-mono text-xs font-medium tabular-nums">
                           {sig.price?.toFixed(2) ?? '--'}
                         </td>
                         <td className="max-w-xs truncate py-2.5 pr-4 text-muted-foreground">
@@ -375,9 +379,9 @@ export function SignalsPage() {
                     return (
                       <div key={p.ticker} className="flex flex-col rounded bg-white/60 dark:bg-black/20 px-2 py-1.5 text-xs">
                         <span className="font-medium">{p.ticker}</span>
-                        <span className="font-mono">{cur?.toFixed(2) ?? '-'}</span>
+                        <span className="font-mono text-xs font-medium tabular-nums">{cur?.toFixed(2) ?? '-'}</span>
                         {changePct != null && (
-                          <span className={`font-mono ${changePct >= 0 ? upClass : downClass}`}>
+                          <span className={`font-mono text-xs font-medium tabular-nums ${changePct >= 0 ? upClass : downClass}`}>
                             {changePct >= 0 ? '+' : ''}{(changePct * 100).toFixed(2)}%
                           </span>
                         )}
@@ -399,7 +403,7 @@ export function SignalsPage() {
                     <Badge
                       key={`${bs.symbol}:${bs.type}-${i}`}
                       variant={bs.type.includes('up') || bs.type === 'strong_up' ? 'default' : 'destructive'}
-                      className="text-xs"
+                      className="text-xs font-mono font-medium tabular-nums"
                     >
                       {bs.symbol} {bs.type.includes('up') ? '↑' : '↓'}+{Math.abs(bs.breakout_pct * 100).toFixed(1)}% vol{bs.volume_ratio}x
                     </Badge>
@@ -411,8 +415,8 @@ export function SignalsPage() {
             {/* 市场广度 */}
             {pulseData.enhancements?.market_breadth && (
               <p className="text-xs text-muted-foreground">
-                市场广度: {pulseData.enhancements.market_breadth.up}↑ / {pulseData.enhancements.market_breadth.down}↓
-                ({(pulseData.enhancements.market_breadth.up_ratio * 100).toFixed(0)}% 上涨)
+                市场广度: <span className="font-mono text-xs font-medium tabular-nums">{pulseData.enhancements.market_breadth.up}</span>↑ / <span className="font-mono text-xs font-medium tabular-nums">{pulseData.enhancements.market_breadth.down}</span>↓
+                (<span className="font-mono text-xs font-medium tabular-nums">{(pulseData.enhancements.market_breadth.up_ratio * 100).toFixed(0)}%</span> 上涨)
               </p>
             )}
           </CardContent>
@@ -431,38 +435,42 @@ export function SignalsPage() {
             </Button>
           </div>
         </CardHeader>
-        {rankingData && rankingData.rankings.length > 0 && (
-          <CardContent className="p-0">
+        <CardContent className="p-0">
+          {rankingLoading && !rankingData ? (
+            <div className="p-4"><TableSkeleton rows={8} /></div>
+          ) : rankingError ? (
+            <div className="p-4"><Alert variant="error" title="排名加载失败" description={rankingError} /></div>
+          ) : rankingData && rankingData.rankings.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="py-2 px-3 text-left w-10">#</th>
-                    <th className="py-2 px-3 text-left">Ticker</th>
-                    <th className="py-2 px-3 text-right">Price</th>
-                    <th className="py-2 px-3 text-right">动量</th>
-                    <th className="py-2 px-3 text-center w-14">SMA</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10 px-3">#</TableHead>
+                    <TableHead className="px-3">Ticker</TableHead>
+                    <TableHead className="px-3 text-right">Price</TableHead>
+                    <TableHead className="px-3 text-right">动量</TableHead>
+                    <TableHead className="w-14 px-3 text-center">SMA</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rankingData.rankings.map((r) => (
-                    <tr key={r.ticker} className="border-b hover:bg-muted/50">
-                      <td className="py-1.5 px-3 font-mono text-muted-foreground">{r.rank}</td>
-                      <td className="py-1.5 px-3 font-medium">{r.ticker}</td>
-                      <td className="py-1.5 px-3 text-right font-mono">{r.price?.toFixed(2) ?? '-'}</td>
-                      <td className={`py-1.5 px-3 text-right font-mono ${(r.momentum ?? 0) > 0 ? upClass : downClass}`}>
+                    <TableRow key={r.ticker}>
+                      <TableCell className="px-3 py-1.5 font-mono text-xs font-medium tabular-nums text-muted-foreground">{r.rank}</TableCell>
+                      <TableCell className="px-3 py-1.5 font-medium">{r.ticker}</TableCell>
+                      <TableCell className="px-3 py-1.5 text-right font-mono text-xs font-medium tabular-nums">{r.price?.toFixed(2) ?? '-'}</TableCell>
+                      <TableCell className={`px-3 py-1.5 text-right font-mono text-xs font-medium tabular-nums ${(r.momentum ?? 0) > 0 ? upClass : downClass}`}>
                         {r.momentum != null ? (r.momentum * 100).toFixed(1) + '%' : '-'}
-                      </td>
-                      <td className="py-1.5 px-3 text-center">
+                      </TableCell>
+                      <TableCell className="px-3 py-1.5 text-center">
                         {r.above_sma === true ? <span className={upClass}>▲</span> : r.above_sma === false ? <span className={downClass}>▼</span> : '-'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
-          </CardContent>
-        )}
+          ) : null}
+        </CardContent>
       </Card>
     </PageContainer>
   )

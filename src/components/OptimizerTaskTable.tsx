@@ -62,12 +62,12 @@ export const OptimizerTaskTable = memo(({ tasks }: { tasks: OptimizerTask[] }) =
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent border-border/40">
-          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Strategy</TableHead>
-          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Market</TableHead>
-          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Method</TableHead>
-          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Status</TableHead>
-          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50 w-[180px]">Progress</TableHead>
-          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Started</TableHead>
+          <TableHead className="h-9">Strategy</TableHead>
+          <TableHead className="h-9">Market</TableHead>
+          <TableHead className="h-9">Method</TableHead>
+          <TableHead className="h-9">Status</TableHead>
+          <TableHead className="h-9 w-[180px]">Progress</TableHead>
+          <TableHead className="h-9">Started</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

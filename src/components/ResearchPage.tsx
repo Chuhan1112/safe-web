@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { useMarket } from '@/contexts/MarketContext'
 import { cn } from '@/lib/utils'
 import { Search, FileText, AlertTriangle, RefreshCw, HelpCircle, ExternalLink, Calendar, Layers, Target, WifiOff } from 'lucide-react'
-import { API_BASE } from '@/lib/api'
+import { api } from '@/lib/api/client'
 
 export function ResearchPage() {
   const { market } = useMarket()
@@ -17,9 +17,8 @@ export function ResearchPage() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${API_BASE}/research?market=${market}`, { signal: controller.signal })
-      .then(res => res.json())
-      .then(data => {
+    api.get<{ reports: ResearchReport[] }>('/research', { market }, controller.signal)
+      .then((data) => {
         if (data.reports?.length > 0) {
           setReports(data.reports)
           setApiAvailable(true)
@@ -31,19 +30,17 @@ export function ResearchPage() {
     return () => controller.abort()
   }, [market])
 
-  // API 返回新数据后，若 selectedId 不在新列表中，重置到第一条
-  useEffect(() => {
-    if (reports.length > 0 && !reports.some(r => r.id === selectedId)) {
-      setSelectedId(reports[0]?.id ?? '')
-    }
-  }, [reports, selectedId])
+  // selectedId 不在当前列表时派生回退到第一条，无需 effect 同步
+  const effectiveSelectedId = reports.some(r => r.id === selectedId)
+    ? selectedId
+    : (reports[0]?.id ?? '')
 
   const filtered = reports.filter(r => {
     const q = search.toLowerCase()
     return r.symbol.toLowerCase().includes(q) || r.companyName.toLowerCase().includes(q)
   })
 
-  const selected = reports.find(r => r.id === selectedId)
+  const selected = reports.find(r => r.id === effectiveSelectedId)
 
   return (
     <div className="flex h-full">
@@ -73,7 +70,7 @@ export function ResearchPage() {
                 onClick={() => setSelectedId(report.id)}
                 className={cn(
                   'w-full border-b border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/50',
-                  selectedId === report.id && 'bg-primary/5 border-l-2 border-l-primary',
+                  effectiveSelectedId === report.id && 'bg-primary/5 border-l-2 border-l-primary',
                 )}
               >
                 <div className="flex items-center justify-between">

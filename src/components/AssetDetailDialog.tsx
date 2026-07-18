@@ -6,18 +6,40 @@ import { Loader2, ExternalLink } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 import { useMarketColors } from "@/hooks/useMarketColors"
 
+interface TickerChartBar {
+  time: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume?: number
+  indicators?: {
+    sma20?: number
+    sma50?: number
+    sma200?: number
+    bb_upper?: number
+    bb_lower?: number
+  }
+}
+
+interface TickerDataResponse {
+  data: TickerChartBar[]
+  current_price?: number
+  change_percent?: number | null
+}
+
 interface AssetDetailDialogProps {
   ticker: string | null
   open: boolean
   onOpenChange: (open: boolean) => void
   dateRange?: DateRange
-  fetchData?: (symbol: string, lookback: number, market?: string) => Promise<any>
+  fetchData?: (symbol: string, lookback: number, market?: string) => Promise<TickerDataResponse>
   market?: string
 }
 
 export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetchData, market }: AssetDetailDialogProps) {
   const { upClass, downClass } = useMarketColors()
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<TickerDataResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const missingDataSource = open && !!ticker && !fetchData

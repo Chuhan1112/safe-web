@@ -4,7 +4,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 // Stub global animation frame functions for spying
 const cancelAnimationFrameSpy = vi.fn()
-const requestAnimationFrameStub = vi.fn().mockImplementation((cb) => {
+const requestAnimationFrameStub = vi.fn().mockImplementation(() => {
   return 123 as unknown as number
 })
 

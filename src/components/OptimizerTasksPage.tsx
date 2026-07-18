@@ -5,7 +5,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { RefreshCw } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
 import { usePolling } from '@/hooks/usePolling'
-import { API_BASE } from '@/lib/api'
+import { api } from '@/lib/api/client'
 
 const POLL_INTERVAL_MS = 3000
 
@@ -21,9 +21,7 @@ export function OptimizerTasksPage() {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/backtest/optimize/tasks?market=${market}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: OptimizerTask[] = await res.json()
+      const data = await api.get<OptimizerTask[]>('/backtest/optimize/tasks', { market })
       setTasks(data)
       setError(null)
     } catch (e: unknown) {
@@ -53,7 +51,7 @@ export function OptimizerTasksPage() {
     <PageContainer>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-black tracking-tight">Optimization Tasks</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Optimization Tasks</h1>
           <p className="text-xs text-muted-foreground/50 mt-1">
             {tasks.length} task{tasks.length !== 1 ? 's' : ''}
             {runningCount > 0 && (

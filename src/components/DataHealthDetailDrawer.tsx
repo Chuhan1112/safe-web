@@ -1,9 +1,14 @@
 import { memo, useCallback, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 
 interface TickerHealthDetail {
   symbol: string
@@ -50,22 +55,19 @@ export const DataHealthDetailDrawer = memo(function DataHealthDetailDrawer({
     }
   }, [ticker, onRepair])
 
-  if (!ticker) return null
-
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-96 flex-col border-l bg-background shadow-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-6 py-4">
-        <h2 className="text-lg font-semibold">
-          {ticker.symbol}{ticker.name && ` - ${ticker.name}`}
-        </h2>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+    <Sheet open={ticker != null} onOpenChange={(o) => { if (!o) onClose() }}>
+      <SheetContent side="right" className="flex w-96 flex-col p-0 sm:max-w-md">
+        {/* Header */}
+        <SheetHeader className="border-b px-6 py-4">
+          <SheetTitle>
+            {ticker?.symbol}{ticker?.name && ` - ${ticker.name}`}
+          </SheetTitle>
+        </SheetHeader>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+        {/* Content */}
+        {ticker && (
+        <div className="flex-1 overflow-y-auto px-6 py-4">
         <div className="space-y-4">
           {/* 基本信息 */}
           <Card>
@@ -128,11 +130,12 @@ export const DataHealthDetailDrawer = memo(function DataHealthDetailDrawer({
             </Card>
           )}
         </div>
-      </div>
+        </div>
+        )}
 
-      {/* Footer */}
-      <div className="border-t px-6 py-4">
-        {onRepair && (
+        {/* Footer */}
+        {ticker && onRepair && (
+        <div className="border-t px-6 py-4">
           <Button
             onClick={handleRepair}
             disabled={repairing}
@@ -141,8 +144,9 @@ export const DataHealthDetailDrawer = memo(function DataHealthDetailDrawer({
           >
             {repairing ? '修复中...' : '修复数据'}
           </Button>
+        </div>
         )}
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 })

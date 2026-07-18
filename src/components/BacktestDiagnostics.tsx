@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronDown, ChevronRight, Info } from 'lucide-react'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -39,7 +39,7 @@ const COMMON_ISSUES = [
   },
 ]
 
-export function BacktestDiagnostics({ metrics }: BacktestDiagnosticsProps) {
+export const BacktestDiagnostics = memo(function BacktestDiagnostics({ metrics }: BacktestDiagnosticsProps) {
   const [open, setOpen] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
 
@@ -112,4 +112,4 @@ export function BacktestDiagnostics({ metrics }: BacktestDiagnosticsProps) {
       )}
     </Card>
   )
-}
+})

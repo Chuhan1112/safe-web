@@ -1,8 +1,9 @@
+import type React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
 
 vi.mock("@/components/ui/table", () => ({
-  TableHead: ({ children, className, ...props }: any) => (
+  TableHead: ({ children, className, ...props }: React.ComponentProps<'th'>) => (
     <th className={className} {...props}>{children}</th>
   ),
 }))

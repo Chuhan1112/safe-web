@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
 // 回归：SignalsPage 切市场后应清空旧结果，避免跨市场脏数据展示
 // SignalsPage 依赖 useMarket hook 和 Browser API (fetch)，不适用 renderToStaticMarkup。

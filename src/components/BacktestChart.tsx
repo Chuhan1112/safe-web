@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   AreaSeries,
   ColorType,
@@ -43,7 +43,7 @@ const EMPTY_SERIES: ChartSeries[] = []
 // 模块级调色板常量，避免每次渲染创建新数组
 const DEFAULT_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']
 
-export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }: ChartProps) => {
+export const BacktestChart = memo(function BacktestChart({ data, series, onHoverTime, colors = {}, theme }: ChartProps) {
   const normalizedData = useMemo(() => data ?? EMPTY_DATA, [data])
   const normalizedSeries = useMemo(() => series ?? EMPTY_SERIES, [series])
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -158,7 +158,6 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
       primarySeriesRef.current = null
       seriesRefsRef.current = []
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backgroundColor, lineColor, textColor, areaTopColor, areaBottomColor])
 
   // Effect 2: 序列数据管理 + 十字线订阅（数据或 emitHover 变化时更新）
@@ -268,4 +267,4 @@ export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }:
       onMouseLeave={handleMouseLeave}
     />
   )
-}
+})

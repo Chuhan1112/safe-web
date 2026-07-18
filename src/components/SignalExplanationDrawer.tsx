@@ -1,9 +1,14 @@
-import { useEffect, useRef } from 'react'
 import { X, Check, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Alert } from '@/components/Alert'
+import { useMarketColors } from '@/hooks/useMarketColors'
 
 interface Condition {
   name: string
@@ -46,57 +51,16 @@ export function SignalExplanationDrawer({
   loading = false,
   error = null,
 }: SignalExplanationDrawerProps) {
-  const panelRef = useRef<HTMLDivElement>(null)
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
-
-  // Prevent body scroll when open
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => { document.body.style.overflow = '' }
-  }, [open])
-
-  if (!open) return null
-
+  const { upClass, downClass } = useMarketColors()
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/40 transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Drawer panel */}
-      <div
-        ref={panelRef}
-        className={cn(
-          'fixed right-0 top-0 z-50 h-full w-full max-w-md border-l',
-          'bg-background/95 backdrop-blur-md shadow-xl',
-          'flex flex-col',
-          'animate-in slide-in-from-right duration-300',
-        )}
-      >
+    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <SheetContent side="right" className="flex w-full flex-col p-0 sm:max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-lg font-semibold">
+        <SheetHeader className="border-b px-6 py-4">
+          <SheetTitle>
             {data ? `${data.ticker} 信号解释` : '信号解释'}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          </SheetTitle>
+        </SheetHeader>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -187,8 +151,8 @@ export function SignalExplanationDrawer({
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
-                              'font-mono',
-                              f.score > 0 ? 'text-emerald-600' : f.score < 0 ? 'text-red-600' : 'text-muted-foreground',
+                              'font-mono tabular-nums',
+                              f.score > 0 ? upClass : f.score < 0 ? downClass : 'text-muted-foreground',
                             )}
                           >
                             {f.score > 0 ? '+' : ''}
@@ -225,7 +189,7 @@ export function SignalExplanationDrawer({
             </>
           )}
         </div>
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   )
 }

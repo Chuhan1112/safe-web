@@ -9,20 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-
-interface TickerHealthRow {
-  symbol: string
-  market: string
-  latest_date: string | null
-  effective_date: string
-  status: string
-  name: string | null
-  missing_days: number
-  anomaly_count: number
-  provider: string | null
-  last_checked_at: string
-  notes: string[]
-}
+import { sortBySeverity, type TickerHealthRow, type ViewMode } from '@/utils/dataHealth'
 
 interface DataHealthTableProps {
   data: TickerHealthRow[]
@@ -32,25 +19,7 @@ interface DataHealthTableProps {
   viewMode?: ViewMode
 }
 
-export type ViewMode = 'abnormal' | 'limited' | 'all'
-
-export const STATUS_ORDER: Record<string, number> = {
-  missing: 0,
-  anomaly: 1,
-  stale: 2,
-  unknown: 3,
-  healthy: 4,
-}
-
 const MAX_DEFAULT_ROWS = 200
-
-export function sortBySeverity(rows: TickerHealthRow[]): TickerHealthRow[] {
-  return [...rows].sort((a, b) => {
-    const orderA = STATUS_ORDER[a.status] ?? 999
-    const orderB = STATUS_ORDER[b.status] ?? 999
-    return orderA - orderB || a.symbol.localeCompare(b.symbol)
-  })
-}
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   healthy: { label: '健康', className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' },
@@ -94,6 +63,8 @@ export const DataHealthTable = memo(function DataHealthTable({
   // ── 虚拟滚动 ────────────────────────────────────────────
   const tableContainerRef = useRef<HTMLDivElement>(null)
 
+  // TanStack Virtual 返回的函数无法被 React Compiler 安全 memo 化（已知误报，按官方文档用法）
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: displayRows.length,
     getScrollElement: () => tableContainerRef.current,
@@ -166,16 +137,16 @@ export const DataHealthTable = memo(function DataHealthTable({
               <div className="w-[120px] px-4 py-2 text-muted-foreground text-sm">{row.latest_date ?? '--'}</div>
               <div className="w-[80px] px-4 py-2 text-sm">
                 {row.missing_days > 0 ? (
-                  <span className="text-amber-600 dark:text-amber-400">{row.missing_days}</span>
+                  <span className="font-mono text-xs font-medium tabular-nums text-amber-600 dark:text-amber-400">{row.missing_days}</span>
                 ) : (
-                  <span className="text-muted-foreground">0</span>
+                  <span className="font-mono text-xs font-medium tabular-nums text-muted-foreground">0</span>
                 )}
               </div>
               <div className="w-[80px] px-4 py-2 text-sm">
                 {row.anomaly_count > 0 ? (
-                  <span className="text-red-600 dark:text-red-400">{row.anomaly_count}</span>
+                  <span className="font-mono text-xs font-medium tabular-nums text-red-600 dark:text-red-400">{row.anomaly_count}</span>
                 ) : (
-                  <span className="text-muted-foreground">0</span>
+                  <span className="font-mono text-xs font-medium tabular-nums text-muted-foreground">0</span>
                 )}
               </div>
               <div className="flex-1 px-4 py-2 text-muted-foreground text-sm">{row.provider ?? '--'}</div>

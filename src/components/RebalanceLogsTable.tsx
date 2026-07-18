@@ -4,8 +4,24 @@ import { TickerLink } from '@/components/TickerLink'
 import { cn, formatPrice } from '@/lib/utils'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
+interface RebalanceLogRow {
+  Date?: string
+  PortfolioValue?: number
+  CashWeight?: string
+  Selected?: string[]
+  PrevHoldings?: string[]
+  Exited?: string[]
+  Names?: Record<string, string>
+  Weights?: Record<string, string>
+  WeightNames?: Record<string, string>
+  Prices?: Record<string, number>
+  ExitPrices?: Record<string, number>
+  IsEmpty?: boolean
+  [key: string]: unknown
+}
+
 interface RebalanceLogsTableProps {
-  logs: Record<string, any>[]
+  logs: RebalanceLogRow[]
   logFilter: string
   t: { date: string; portfolio_value: string; selected_assets: string; weights: string; buy?: string; holds?: string; sold?: string; empty_position: string; cash_weight: string }
   handleTickerClick: (ticker: string) => void
@@ -48,10 +64,10 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
         <Table>
       <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
         <TableRow className="border-border/50 hover:bg-transparent">
-          <TableHead className="w-[120px] h-8 text-xs font-semibold">{t.date}</TableHead>
-          <TableHead className="w-[140px] h-8 text-xs font-semibold text-right">{t.portfolio_value}</TableHead>
-          <TableHead className="h-8 text-xs font-semibold">{t.selected_assets}</TableHead>
-          <TableHead className="w-[240px] h-8 text-xs font-semibold text-right">{t.weights}</TableHead>
+          <TableHead className="w-[120px] h-8">{t.date}</TableHead>
+          <TableHead className="w-[140px] h-8 text-right">{t.portfolio_value}</TableHead>
+          <TableHead className="h-8">{t.selected_assets}</TableHead>
+          <TableHead className="w-[240px] h-8 text-right">{t.weights}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -75,7 +91,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                     {dateStr}
                   </span>
                 </TableCell>
-                <TableCell className="font-mono text-sm font-semibold py-3 text-right">
+                <TableCell className="font-mono text-xs font-medium tabular-nums py-3 text-right">
                   {currencySymbol}{log.PortfolioValue?.toLocaleString?.(undefined, { maximumFractionDigits: 0 })}
                 </TableCell>
                 <TableCell className="py-3">
@@ -102,7 +118,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                   <span className="text-xs font-bold tracking-tight uppercase">
                                     <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
-                                  <span className="text-2xs text-muted-foreground/70 tabular-nums">
+                                  <span className="text-2xs font-mono text-muted-foreground/70 tabular-nums font-medium">
                                     {formatPrice(log.Prices?.[ticker], currencySymbol)}
                                   </span>
                                 </span>
@@ -125,7 +141,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                   <span className="text-xs font-bold tracking-tight uppercase pl-2">
                                     <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
-                                  <span className="text-2xs text-muted-foreground/70 tabular-nums">
+                                  <span className="text-2xs font-mono text-muted-foreground/70 tabular-nums font-medium">
                                     {formatPrice(log.Prices?.[ticker], currencySymbol)}
                                   </span>
                                 </span>
@@ -150,7 +166,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                                   <span className="text-xs font-bold tracking-tight uppercase">
                                     <TickerLink ticker={ticker} displayName={displayName(ticker, names)} onClick={() => handleTickerClick(ticker)} />
                                   </span>
-                                  <span className="text-2xs text-red-500/60 tabular-nums">
+                                  <span className="text-2xs font-mono text-red-500/60 tabular-nums font-medium">
                                     {formatPrice(log.ExitPrices?.[ticker], currencySymbol)}
                                   </span>
                                 </span>
@@ -173,7 +189,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                           <div key={k} className="relative group border border-border/40 bg-secondary/10 rounded-sm overflow-hidden px-1.5 py-0.5 min-w-[72px] flex justify-between items-center z-0 shadow-sm transition-colors hover:border-primary/30">
                             <div className="absolute left-0 top-0 bottom-0 bg-primary/10 transition-all -z-10 group-hover:bg-primary/20" style={{ width: `${parsedWeight}%` }} />
                             <span className="text-2xs font-bold text-muted-foreground/70 tracking-tight mr-2 truncate max-w-[60px]" title={k}>{label}</span>
-                            <span className="text-2xs font-mono font-black text-foreground/80">{v}</span>
+                            <span className="text-2xs font-mono font-black tabular-nums text-foreground/80">{v}</span>
                           </div>
                         )
                       })}
@@ -181,7 +197,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                       <div className="relative group border border-yellow-500/20 bg-yellow-500/5 rounded-sm overflow-hidden px-1.5 py-0.5 min-w-[72px] flex justify-between items-center z-0 shadow-sm">
                         <div className="absolute left-0 top-0 bottom-0 bg-yellow-500/10 transition-all -z-10" style={{ width: `${parseFloat(log.CashWeight) || 0}%` }} />
                         <span className="text-2xs font-bold text-yellow-600/70 dark:text-yellow-500/60 tracking-tight mr-2">{t.cash_weight}</span>
-                        <span className="text-2xs font-mono font-black text-yellow-700 dark:text-yellow-400">{log.CashWeight}</span>
+                        <span className="text-2xs font-mono font-black tabular-nums text-yellow-700 dark:text-yellow-400">{log.CashWeight}</span>
                       </div>
                     )}
                   </div>

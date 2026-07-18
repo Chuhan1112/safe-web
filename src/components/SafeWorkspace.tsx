@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, lazy, Suspense, useEffect } from 'react'
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react'
 import { MetricsGrid } from '@/components/MetricsGrid'
 import { TradeLogsTable } from '@/components/TradeLogsTable'
 import { RebalanceLogsTable } from '@/components/RebalanceLogsTable'
@@ -69,11 +69,13 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
   const [tableLoading] = useState(false)
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)
 
-  // 切市场时清空本地状态（当前展示 mock 数据，但保持一致性）
-  useEffect(() => {
+  // 切市场时清空本地状态（渲染期间调整，避免 effect 级联渲染）
+  const [prevMarket, setPrevMarket] = useState(market)
+  if (prevMarket !== market) {
+    setPrevMarket(market)
     setLoading(false)
     setHoveredDate(null)
-  }, [market])
+  }
 
   // useCallback 稳定化，避免每次渲染创建新函数导致 BacktestChart 重渲染
   const handleHoverTime = useCallback((time: string | null) => setHoveredDate(time), [])
@@ -222,7 +224,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
                 {metrics.map((m) => (
                   <div key={m.label} className="flex flex-col gap-1">
                     <span className="text-2xs uppercase tracking-wider text-muted-foreground">{m.label}</span>
-                    <span className={cn('text-2xl font-bold tabular-nums', m.color)}>
+                    <span className={cn('text-2xl font-bold font-mono tabular-nums', m.color)}>
                       {m.format(m.value)}
                     </span>
                   </div>

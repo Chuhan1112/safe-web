@@ -2,7 +2,7 @@
 import { cn } from '@/lib/utils'
 import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
-import { API_BASE } from '@/lib/api'
+import { api } from '@/lib/api/client'
 import { useState, useEffect } from 'react'
 
 interface SidebarProps {
@@ -51,14 +51,24 @@ function NavButton({ item, isActive, onClick }: { item: { id: string; icon: Reac
   )
 }
 
+interface HealthSummary {
+  market: string
+  total: number
+  healthy: number
+  stale: number
+  missing: number
+  anomaly: number
+  unknown: number
+  last_checked_at: string
+}
+
 function DataStatusDot() {
   const { market } = useMarket()
   const [status, setStatus] = useState<'fresh' | 'stale' | 'unknown'>('unknown')
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch(`${API_BASE}/data/health/summary?market=${market}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : null))
+    api.get<HealthSummary>('/data/health/summary', { market }, controller.signal)
       .then((data) => {
         if (!data || !data.total) {
           setStatus('unknown')

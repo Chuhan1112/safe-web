@@ -31,7 +31,7 @@ export const MetricsGrid = ({ metrics, className }: MetricsGridProps) => (
         </span>
         <span
           className={cn(
-            'text-lg font-bold tabular-nums',
+            'text-lg font-bold font-mono tabular-nums',
             m.color ?? 'text-foreground',
           )}
         >

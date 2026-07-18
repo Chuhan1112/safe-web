@@ -1,7 +1,8 @@
 import { CandlestickSeries, ColorType, createChart, LineSeries } from 'lightweight-charts'
 import type { BusinessDay, IChartApi, MouseEventParams, Time } from 'lightweight-charts'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useIsDark } from '@/hooks/useIsDark'
+import { useMarketColors } from '@/hooks/useMarketColors'
 import { timeToIso, toBusinessDate } from '@/utils/chartHoverLogic'
 import { resolveChartColor } from '@/utils/chartColors'
 import { FloatingTooltip, type TooltipData } from '@/components/FloatingTooltip'
@@ -35,21 +36,23 @@ const getChartTheme = (isDark: boolean) => ({
 })
 
 const defaultIndicators: IndicatorConfig[] = [
-  { id: 'sma20', label: 'SMA20', color: '#fbbf24', visible: true },
-  { id: 'sma50', label: 'SMA50', color: '#3b82f6', visible: true },
-  { id: 'sma200', label: 'SMA200', color: '#ef4444', visible: true },
-  { id: 'bb', label: 'BB', color: '#a855f7', visible: false },
+  { id: 'sma20', label: 'SMA20', color: '', visible: true },
+  { id: 'sma50', label: 'SMA50', color: '', visible: true },
+  { id: 'sma200', label: 'SMA200', color: '', visible: true },
+  { id: 'bb', label: 'BB', color: '', visible: false },
 ]
 
-const indicatorLabelMap: Record<string, { label: string; color: string }> = {
-  sma20: { label: 'SMA20', color: '#fbbf24' },
-  sma50: { label: 'SMA50', color: '#3b82f6' },
-  sma200: { label: 'SMA200', color: '#ef4444' },
-  bb_upper: { label: 'BB Upper', color: '#a855f7' },
-  bb_lower: { label: 'BB Lower', color: '#a855f7' },
+/** 指标线 → chart token 映射（颜色在组件内按主题解析，见 palette） */
+const indicatorColorVar: Record<string, string> = {
+  sma20: '--chart-1',
+  sma50: '--chart-2',
+  sma200: '--chart-3',
+  bb: '--chart-4',
+  bb_upper: '--chart-4',
+  bb_lower: '--chart-4',
 }
 
-export const AssetChart = ({ data, theme }: AssetChartProps) => {
+export const AssetChart = memo(function AssetChart({ data, theme }: AssetChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 400 })
@@ -58,6 +61,34 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
   const isDark = useIsDark(theme)
   const isDarkRef = useRef(isDark)
   const seriesRefs = useRef<Map<string, ReturnType<IChartApi['addSeries']>>>(new Map())
+  const { upVar, downVar } = useMarketColors()
+
+  // 主题切换后 CSS 变量值变化，需重新解析；蜡烛色随市场（US 绿涨 / CN 红涨）
+  const palette = useMemo(() => ({
+    up: resolveChartColor(upVar),
+    down: resolveChartColor(downVar),
+    sma20: resolveChartColor('--chart-1'),
+    sma50: resolveChartColor('--chart-2'),
+    sma200: resolveChartColor('--chart-3'),
+    bb: resolveChartColor('--chart-4', 0.5),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [isDark, upVar, downVar])
+
+  const indicatorLabelMap = useMemo<Record<string, { label: string; color: string }>>(() => ({
+    sma20: { label: 'SMA20', color: palette.sma20 },
+    sma50: { label: 'SMA50', color: palette.sma50 },
+    sma200: { label: 'SMA200', color: palette.sma200 },
+    bb_upper: { label: 'BB Upper', color: palette.bb },
+    bb_lower: { label: 'BB Lower', color: palette.bb },
+  }), [palette])
+
+  // IndicatorToggles 展示用：颜色从 palette 解析
+  const displayIndicators = useMemo<IndicatorConfig[]>(() =>
+    indicators.map((ind) => ({
+      ...ind,
+      color: resolveChartColor(indicatorColorVar[ind.id] ?? '--chart-1'),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    })), [indicators, palette])
 
   useEffect(() => { isDarkRef.current = isDark }, [isDark])
 
@@ -112,6 +143,7 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null }
 
     let chartCleanup: IChartApi | null = null
+    const seriesMap = seriesRefs.current
     try {
       const { textColor, gridColor, borderColor } = getChartTheme(isDarkRef.current)
       const chart = createChart(chartContainerRef.current, {
@@ -154,8 +186,8 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
       })
 
       const candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: resolveChartColor('--data-up'), downColor: resolveChartColor('--data-down'), borderVisible: false,
-        wickUpColor: resolveChartColor('--data-up'), wickDownColor: resolveChartColor('--data-down'),
+        upColor: palette.up, downColor: palette.down, borderVisible: false,
+        wickUpColor: palette.up, wickDownColor: palette.down,
       })
       candleSeries.setData(
         normalized.map((item) => ({
@@ -176,23 +208,23 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
         return s
       }
 
-      const sma20 = addLineSeries('sma20', '#fbbf24', 1, 'SMA 20')
+      const sma20 = addLineSeries('sma20', palette.sma20, 1, 'SMA 20')
       sma20.setData(normalized.filter((i) => i.indicators?.sma20 != null)
         .map((i) => ({ time: i.businessDay as Time, value: Number(i.indicators!.sma20) })))
 
-      const sma50 = addLineSeries('sma50', '#3b82f6', 1, 'SMA 50')
+      const sma50 = addLineSeries('sma50', palette.sma50, 1, 'SMA 50')
       sma50.setData(normalized.filter((i) => i.indicators?.sma50 != null)
         .map((i) => ({ time: i.businessDay as Time, value: Number(i.indicators!.sma50) })))
 
-      const sma200 = addLineSeries('sma200', '#ef4444', 2, 'SMA 200')
+      const sma200 = addLineSeries('sma200', palette.sma200, 2, 'SMA 200')
       sma200.setData(normalized.filter((i) => i.indicators?.sma200 != null)
         .map((i) => ({ time: i.businessDay as Time, value: Number(i.indicators!.sma200) })))
 
-      const bbUpper = addLineSeries('bb_upper', 'rgba(168, 85, 247, 0.5)', 1, 'BB Upper', true)
+      const bbUpper = addLineSeries('bb_upper', palette.bb, 1, 'BB Upper', true)
       bbUpper.setData(normalized.filter((i) => i.indicators?.bb_upper != null)
         .map((i) => ({ time: i.businessDay as Time, value: Number(i.indicators!.bb_upper) })))
 
-      const bbLower = addLineSeries('bb_lower', 'rgba(168, 85, 247, 0.5)', 1, 'BB Lower', true)
+      const bbLower = addLineSeries('bb_lower', palette.bb, 1, 'BB Lower', true)
       bbLower.setData(normalized.filter((i) => i.indicators?.bb_lower != null)
         .map((i) => ({ time: i.businessDay as Time, value: Number(i.indicators!.bb_lower) })))
 
@@ -227,14 +259,14 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
       chart.timeScale().fitContent()
       chartRef.current = chart
 
-      return () => { chart.remove(); chartRef.current = null; seriesRefs.current.clear() }
+      return () => { chart.remove(); chartRef.current = null; seriesMap.clear() }
     } catch (error) {
       if (chartCleanup) chartCleanup.remove()
       chartRef.current = null
       seriesRefs.current.clear()
       console.error('Failed to create asset chart', error)
     }
-  }, [data, dimensions.width, dimensions.height])
+  }, [data, dimensions.width, dimensions.height, palette, indicatorLabelMap])
 
   useEffect(() => {
     indicators.forEach((ind) => {
@@ -252,11 +284,11 @@ export const AssetChart = ({ data, theme }: AssetChartProps) => {
 
   return (
     <div className="space-y-2">
-      <IndicatorToggles indicators={indicators} onToggle={handleIndicatorToggle} />
+      <IndicatorToggles indicators={displayIndicators} onToggle={handleIndicatorToggle} />
       <div className="relative">
         <div ref={chartContainerRef} className="h-[400px] w-full" />
         <FloatingTooltip data={hoverInfo} />
       </div>
     </div>
   )
-}
+})

@@ -2,12 +2,13 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { DataHealthTable, type ViewMode } from '@/components/DataHealthTable'
+import { DataHealthTable } from '@/components/DataHealthTable'
+import type { ViewMode } from '@/utils/dataHealth'
 import { DataHealthDetailDrawer } from '@/components/DataHealthDetailDrawer'
 import { useMarket } from '@/contexts/MarketContext'
 import { requestCache } from '@/utils/requestCache'
 import { deduplicateRequest } from '@/utils/deduplicateRequest'
-import { API_BASE as API } from '@/lib/api'
+import { api } from '@/lib/api/client'
 
 // ── 类型 ──────────────────────────────────────────────────────
 
@@ -74,13 +75,16 @@ export const DataHealthPage = memo(function DataHealthPage() {
   // ── 缓存帮助函数 ──────────────────────────────────────────
 
   const cachedFetch = useCallback(
-    async <T,>(url: string, cacheKey: string, ttlMs = 60_000): Promise<T> => {
+    async <T,>(
+      url: string,
+      params: Record<string, unknown> | undefined,
+      cacheKey: string,
+      ttlMs = 60_000,
+    ): Promise<T> => {
       const cached = requestCache.get<T>(cacheKey)
       if (cached) return cached as T
       return deduplicateRequest(cacheKey, async () => {
-        const res = await fetch(url)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
+        const data = await api.get<T>(url, params)
         requestCache.set(cacheKey, data, ttlMs)
         return data as T
       })
@@ -95,12 +99,14 @@ export const DataHealthPage = memo(function DataHealthPage() {
     try {
       const [summaryData, tickersData] = await Promise.all([
         cachedFetch<HealthSummary>(
-          `${API}/data/health/summary?market=${market}`,
+          '/data/health/summary',
+          { market },
           `health-summary-${market}`,
           60_000,
         ),
         cachedFetch<TickerHealthRow[]>(
-          `${API}/data/health/tickers?market=${market}`,
+          '/data/health/tickers',
+          { market },
           `health-tickers-${market}`,
           60_000,
         ),
@@ -148,16 +154,12 @@ export const DataHealthPage = memo(function DataHealthPage() {
   const handleRepair = useCallback(
     async (symbol: string) => {
       try {
-        const res = await fetch(`${API}/data/health/ticker/${symbol}/repair?market=${market}`, {
-          method: 'POST',
-        })
-        if (res.ok) {
-          // 修复后失效缓存，拉取最新数据
-          requestCache.invalidate(`health-summary-${market}`)
-          requestCache.invalidate(`health-tickers-${market}`)
-          await fetchData()
-          setSelectedTicker(null)
-        }
+        await api.post(`/data/health/ticker/${symbol}/repair?market=${market}`)
+        // 修复后失效缓存，拉取最新数据
+        requestCache.invalidate(`health-summary-${market}`)
+        requestCache.invalidate(`health-tickers-${market}`)
+        await fetchData()
+        setSelectedTicker(null)
       } catch (err) {
         console.error('修复失败:', err)
       }
@@ -173,7 +175,7 @@ export const DataHealthPage = memo(function DataHealthPage() {
         {/* 标题行 */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">数据健康中心</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">数据健康中心</h1>
             <span className={cn(
               'rounded-md px-2 py-0.5 text-xs font-bold',
               market === 'US'
@@ -208,7 +210,7 @@ export const DataHealthPage = memo(function DataHealthPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={cn('text-2xl font-bold', card.color)}>
+                  <div className={cn('text-2xl font-bold font-mono tabular-nums', card.color)}>
                     {(summary[card.key] as number) ?? 0}
                   </div>
                 </CardContent>
@@ -219,7 +221,7 @@ export const DataHealthPage = memo(function DataHealthPage() {
                 <CardTitle className="text-xs text-muted-foreground">总计</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{summary.total}</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">{summary.total}</div>
               </CardContent>
             </Card>
           </div>

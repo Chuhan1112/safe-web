@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMarket } from '@/contexts/MarketContext'
 
-import { API_BASE as API } from '@/lib/api'
+import { api } from '@/lib/api/client'
 
 interface Experiment {
   id: string
@@ -62,11 +62,12 @@ export const ExperimentsPage = () => {
   const fetchExperiments = useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
     try {
-      const params = new URLSearchParams()
-      if (filterStrategy) params.set('strategy_id', filterStrategy)
-      if (filterMarket) params.set('market', filterMarket)
-      const res = await fetch(`${API}/experiments?${params}`, { signal })
-      if (res.ok) setExperiments(await res.json())
+      const data = await api.get<Experiment[]>(
+        '/experiments',
+        { strategy_id: filterStrategy || undefined, market: filterMarket || undefined },
+        signal,
+      )
+      setExperiments(data)
     } finally {
       setLoading(false)
     }
@@ -133,16 +134,13 @@ export const ExperimentsPage = () => {
     }))
 
     try {
-      const res = await fetch(`${API}/experiments/${exp.id}/rerun`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ param_overrides: paramOverrides }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.detail || `HTTP ${res.status}`)
-      }
-      const data = await res.json()
+      const data = await api.post<{
+        metrics: Record<string, number>
+        equity_curve: { time: string; value: number }[]
+        drawdown_curve: { time: string; value: number }[]
+        logs: unknown[]
+        trade_logs: unknown[]
+      }>(`/experiments/${exp.id}/rerun`, { param_overrides: paramOverrides })
 
       // 标准化 metrics key（后端返回 snake_case）
       const raw = data.metrics || {}
@@ -184,7 +182,7 @@ export const ExperimentsPage = () => {
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">实验记录本</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">实验记录本</h2>
         <Button variant="outline" size="sm" onClick={() => fetchExperiments()} disabled={loading}>
           {loading ? '加载中...' : '刷新'}
         </Button>
@@ -272,7 +270,7 @@ export const ExperimentsPage = () => {
                     {Object.entries(exp.metrics).slice(0, 5).map(([k, v]) => (
                       <div key={k} className="flex justify-between">
                         <span className="text-muted-foreground">{k}</span>
-                        <span className="font-mono">{typeof v === 'number' ? v.toFixed(4) : String(v)}</span>
+                        <span className="font-mono text-xs font-medium tabular-nums">{typeof v === 'number' ? v.toFixed(4) : String(v)}</span>
                       </div>
                     ))}
                   </div>
@@ -284,7 +282,7 @@ export const ExperimentsPage = () => {
                       {Object.entries(rerun.metrics).map(([k, v]) => (
                         <div key={k} className="flex justify-between">
                           <span className="text-muted-foreground">{k}</span>
-                          <span className="font-mono text-primary">
+                          <span className="font-mono text-xs font-medium tabular-nums text-primary">
                             {typeof v === 'number' ? v.toFixed(4) : String(v)}
                           </span>
                         </div>

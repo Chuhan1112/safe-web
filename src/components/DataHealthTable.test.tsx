@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sortBySeverity } from '@/components/DataHealthTable'
+import { sortBySeverity, type TickerHealthRow } from '@/utils/dataHealth'
 
 describe('sortBySeverity', () => {
   it('orders missing > anomaly > stale > unknown > healthy', () => {
@@ -10,7 +10,7 @@ describe('sortBySeverity', () => {
       { status: 'anomaly', symbol: 'D' },
       { status: 'unknown', symbol: 'E' },
     ]
-    const sorted = sortBySeverity(rows as any).map((r) => r.status)
+    const sorted = sortBySeverity(rows as unknown as TickerHealthRow[]).map((r) => r.status)
     expect(sorted).toEqual(['missing', 'anomaly', 'stale', 'unknown', 'healthy'])
   })
 
@@ -19,7 +19,7 @@ describe('sortBySeverity', () => {
       { status: 'stale', symbol: 'Z' },
       { status: 'stale', symbol: 'A' },
     ]
-    const sorted = sortBySeverity(rows as any).map((r) => r.symbol)
+    const sorted = sortBySeverity(rows as unknown as TickerHealthRow[]).map((r) => r.symbol)
     expect(sorted).toEqual(['A', 'Z'])
   })
 })
