@@ -31,9 +31,6 @@ interface ChartPanelT {
   no_data: string
 }
 
-// 模块级常量，避免每次渲染创建新对象导致 React.memo 失效
-const TRANSPARENT_COLORS = { backgroundColor: 'transparent' } as const
-
 interface ChartPanelProps {
   result: BacktestResult | null;
   compareMode: boolean;
@@ -276,7 +273,7 @@ export const ChartPanel = React.memo(({
           </div>
         </div>
         {compareMode && Object.keys(compareResults).length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
             {Object.keys(compareResults).map((id, idx) => (
               <div
                 key={id}
@@ -304,10 +301,10 @@ export const ChartPanel = React.memo(({
               <div className="flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex flex-col gap-0.5 shrink-0">
-                    <span className="font-bold text-foreground/90 whitespace-nowrap text-[11px]">
+                    <span className="font-bold text-foreground/90 whitespace-nowrap text-xs">
                       {hoveredTime}
                     </span>
-                    <span className="text-[9px] text-muted-foreground/70 whitespace-nowrap line-clamp-1">
+                    <span className="text-2xs text-muted-foreground/70 whitespace-nowrap line-clamp-1">
                       {hoveredSnapshot.date}
                     </span>
                   </div>
@@ -318,23 +315,23 @@ export const ChartPanel = React.memo(({
                       const ticker = raw.split('(')[0]?.trim();
                       const name = hoveredSnapshot.names?.[ticker] || ticker;
                       return (
-                        <span key={raw} className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-[9px] font-mono border border-border/30 text-muted-foreground">
+                        <span key={raw} className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-2xs font-mono border border-border/30 text-muted-foreground">
                           {name}
                         </span>
                       );
                     })}
                     {hoveredSnapshot.holdings.length > 8 && (
-                      <span className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-[9px] text-muted-foreground/60 border border-border/20">
+                      <span className="inline-flex items-center rounded-sm bg-background/50 px-1.5 py-0.5 text-2xs text-muted-foreground/60 border border-border/20">
                         +{hoveredSnapshot.holdings.length - 8}
                       </span>
                     )}
                     {(!hoveredSnapshot.holdings || hoveredSnapshot.holdings.length === 0) && (
-                      <span className="text-muted-foreground/40 italic text-[10px]">{t.no_holdings}</span>
+                      <span className="text-muted-foreground/40 italic text-2xs">{t.no_holdings}</span>
                     )}
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <span className="inline-block px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground text-[9px] font-bold uppercase tracking-wider">
+                    <span className="inline-block px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground text-2xs font-bold uppercase tracking-wider">
                       {hoveredSnapshot.source === 'trade' ? t.trade_snapshot : t.rebalance_snapshot}
                     </span>
                   </div>
@@ -345,7 +342,7 @@ export const ChartPanel = React.memo(({
                       <span
                         key={`${row.ticker}-${idx}`}
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-mono border shadow-sm",
+                          "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-2xs font-mono border shadow-sm",
                           row.action === "BUY"
                             ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                             : row.action === "SELL"
@@ -381,7 +378,7 @@ export const ChartPanel = React.memo(({
           <div key={compareKey} className="w-full h-[400px]">
             <BacktestChart
               series={compareSeries}
-              colors={TRANSPARENT_COLORS}
+              colors={{ backgroundColor: 'transparent' }}
             />
           </div>
         ) : result ? (
@@ -389,7 +386,7 @@ export const ChartPanel = React.memo(({
             <BacktestChart
               data={chartView === "equity" ? result.equity_curve : result.drawdown_curve}
               onHoverTime={setHoveredTime}
-              colors={TRANSPARENT_COLORS}
+              colors={{ backgroundColor: 'transparent' }}
             />
           </div>
         ) : (

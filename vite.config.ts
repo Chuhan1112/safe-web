@@ -20,6 +20,8 @@ export default defineConfig({
         manualChunks: {
           'lightweight-charts': ['lightweight-charts'],
           'vendor-react': ['react', 'react-dom'],
+          'vendor-date': ['date-fns'],
+          'vendor-icons': ['lucide-react'],
           'vendor-radix': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-popover',

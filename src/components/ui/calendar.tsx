@@ -41,7 +41,7 @@ function Calendar({
                 ),
                 month_grid: "rdp-month_grid w-full border-collapse",
                 weekdays: "rdp-weekdays",
-                weekday: "rdp-weekday pb-2.5 pt-1 text-[11px] font-medium text-muted-foreground/70 uppercase",
+                weekday: "rdp-weekday pb-2.5 pt-1 text-xs font-medium text-muted-foreground/70 uppercase",
                 weeks: "rdp-weeks",
                 week: "rdp-week",
                 day: "rdp-day text-center text-sm p-0 relative focus-within:relative focus-within:z-20",

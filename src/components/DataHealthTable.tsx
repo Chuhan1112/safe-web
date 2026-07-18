@@ -1,9 +1,9 @@
-import { memo } from 'react'
+import { memo, useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { cn } from '@/lib/utils'
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -91,6 +91,18 @@ export const DataHealthTable = memo(function DataHealthTable({
       ? sorted.slice(0, MAX_DEFAULT_ROWS)
       : sorted
 
+  // ── 虚拟滚动 ────────────────────────────────────────────
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+
+  const rowVirtualizer = useVirtualizer({
+    count: displayRows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 48,
+    overscan: 10,
+  })
+
+  const virtualItems = rowVirtualizer.getVirtualItems()
+
   if (data.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -100,9 +112,9 @@ export const DataHealthTable = memo(function DataHealthTable({
   }
 
   return (
-    <div className="relative w-full overflow-auto">
+    <div ref={tableContainerRef} className="relative w-full overflow-auto" style={{ maxHeight: '600px' }}>
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 bg-background z-10">
           <TableRow>
             <TableHead>代码</TableHead>
             {showName && <TableHead>名称</TableHead>}
@@ -114,54 +126,63 @@ export const DataHealthTable = memo(function DataHealthTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {displayRows.map((row) => (
-            <TableRow
-              key={row.symbol}
-              className={cn(
-                'cursor-pointer',
-                selectedSymbol === row.symbol && 'bg-muted/80',
-              )}
-              onClick={() => onSelect?.(row)}
-            >
-              <TableCell className="font-mono font-medium">
-                {row.symbol}
-              </TableCell>
-              {showName && (
-                <TableCell className="text-muted-foreground">
-                  {row.name || '--'}
-                </TableCell>
-              )}
-              <TableCell>
-                <StatusBadge status={row.status} />
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {row.latest_date ?? '--'}
-              </TableCell>
-              <TableCell>
-                {row.missing_days > 0 ? (
-                  <span className="text-amber-600 dark:text-amber-400">
-                    {row.missing_days}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">0</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {row.anomaly_count > 0 ? (
-                  <span className="text-red-600 dark:text-red-400">
-                    {row.anomaly_count}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">0</span>
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {row.provider ?? '--'}
-              </TableCell>
-            </TableRow>
-          ))}
+          {/* 撑开滚动高度的占位行 */}
+          <tr style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
+            <td colSpan={showName ? 7 : 6} />
+          </tr>
         </TableBody>
       </Table>
+
+      {/* 虚拟化行，绝对定位叠在占位行上 */}
+      <div
+        className="absolute left-0 right-0 top-0"
+        style={{ paddingTop: `${virtualItems[0]?.start ?? 0}px` }}
+      >
+        {virtualItems.map((virtualRow) => {
+          const row = displayRows[virtualRow.index]
+          if (!row) return null
+          return (
+            <div
+              key={row.symbol}
+              data-index={virtualRow.index}
+              ref={rowVirtualizer.measureElement}
+              className={cn(
+                'absolute left-0 right-0 flex items-center border-b cursor-pointer hover:bg-muted/50',
+                selectedSymbol === row.symbol && 'bg-muted/80',
+              )}
+              style={{
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+              onClick={() => onSelect?.(row)}
+            >
+              <div className="w-[120px] px-4 py-2 font-mono font-medium text-sm">{row.symbol}</div>
+              {showName && (
+                <div className="w-[160px] px-4 py-2 text-muted-foreground text-sm">{row.name || '--'}</div>
+              )}
+              <div className="w-[80px] px-4 py-2">
+                <StatusBadge status={row.status} />
+              </div>
+              <div className="w-[120px] px-4 py-2 text-muted-foreground text-sm">{row.latest_date ?? '--'}</div>
+              <div className="w-[80px] px-4 py-2 text-sm">
+                {row.missing_days > 0 ? (
+                  <span className="text-amber-600 dark:text-amber-400">{row.missing_days}</span>
+                ) : (
+                  <span className="text-muted-foreground">0</span>
+                )}
+              </div>
+              <div className="w-[80px] px-4 py-2 text-sm">
+                {row.anomaly_count > 0 ? (
+                  <span className="text-red-600 dark:text-red-400">{row.anomaly_count}</span>
+                ) : (
+                  <span className="text-muted-foreground">0</span>
+                )}
+              </div>
+              <div className="flex-1 px-4 py-2 text-muted-foreground text-sm">{row.provider ?? '--'}</div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 })

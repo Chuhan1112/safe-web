@@ -22,7 +22,7 @@ export const ActionFilter = ({ selected, onToggle, className }: ActionFilterProp
           key={a.id}
           onClick={() => onToggle(a.id)}
           className={cn(
-            'rounded-md border px-2.5 py-1 text-[10px] font-bold tracking-wider transition-all',
+            'rounded-md border px-2.5 py-1 text-2xs font-bold tracking-wider transition-all',
             isActive
               ? a.id === 'BUY'
                 ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-500'

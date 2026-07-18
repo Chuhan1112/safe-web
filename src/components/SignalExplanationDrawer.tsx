@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { X, Check, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert } from '@/components/Alert'
 
 interface Condition {
   name: string
@@ -34,6 +36,7 @@ interface SignalExplanationDrawerProps {
   onClose: () => void
   data: SignalExplanationData | null
   loading?: boolean
+  error?: string | null
 }
 
 export function SignalExplanationDrawer({
@@ -41,6 +44,7 @@ export function SignalExplanationDrawer({
   onClose,
   data,
   loading = false,
+  error = null,
 }: SignalExplanationDrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -89,12 +93,9 @@ export function SignalExplanationDrawer({
           <h2 className="text-lg font-semibold">
             {data ? `${data.ticker} 信号解释` : '信号解释'}
           </h2>
-          <button
-            onClick={onClose}
-            className="rounded-sm opacity-70 transition-opacity hover:opacity-100"
-          >
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭">
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -106,7 +107,11 @@ export function SignalExplanationDrawer({
             </div>
           )}
 
-          {!loading && !data && (
+          {!loading && error && (
+            <Alert variant="error" title="获取解释失败" description={error} />
+          )}
+
+          {!loading && !error && !data && (
             <div className="py-12 text-center text-muted-foreground">无数据</div>
           )}
 

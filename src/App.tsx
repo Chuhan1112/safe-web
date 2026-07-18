@@ -97,7 +97,7 @@ function App() {
         }}
       />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-14 md:pb-0">
         <div className={isPrivateView ? 'hidden' : ''}>
           <SafeWorkspace
             activeView={activeView}

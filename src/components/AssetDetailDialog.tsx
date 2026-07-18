@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AssetChart } from "@/components/AssetChart"
 import { Loader2, ExternalLink } from "lucide-react"
 import type { DateRange } from "react-day-picker"
+import { useMarketColors } from "@/hooks/useMarketColors"
 
 interface AssetDetailDialogProps {
   ticker: string | null
@@ -15,6 +16,7 @@ interface AssetDetailDialogProps {
 }
 
 export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetchData, market }: AssetDetailDialogProps) {
+  const { upClass, downClass } = useMarketColors()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,10 +77,10 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
               const changeSign = changePct != null && changePct > 0 ? '+' : ''
               return data ? (
                 <div className="flex items-center gap-3">
-                  <span className={`text-xl font-mono font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`text-xl font-mono font-medium ${isPositive ? upClass : downClass}`}>
                       {currencySymbol}{data.current_price?.toFixed(2)}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded font-mono font-medium ${isPositive ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded font-mono font-medium ${isPositive ? 'bg-data-up/10 ' + upClass : 'bg-data-down/10 ' + downClass}`}>
                       {changeSign}{changePct?.toFixed(2)}%
                   </span>
                 </div>

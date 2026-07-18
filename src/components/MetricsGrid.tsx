@@ -26,7 +26,7 @@ export const MetricsGrid = ({ metrics, className }: MetricsGridProps) => (
         key={m.label}
         className="flex flex-col gap-1 rounded-lg border border-border/50 bg-card/50 px-3 py-2.5 backdrop-blur-sm"
       >
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground/60">
           {m.label}
         </span>
         <span

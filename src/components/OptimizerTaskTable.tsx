@@ -62,12 +62,12 @@ export const OptimizerTaskTable = memo(({ tasks }: { tasks: OptimizerTask[] }) =
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent border-border/40">
-          <TableHead className="h-9 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">Strategy</TableHead>
-          <TableHead className="h-9 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">Market</TableHead>
-          <TableHead className="h-9 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">Method</TableHead>
-          <TableHead className="h-9 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">Status</TableHead>
-          <TableHead className="h-9 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 w-[180px]">Progress</TableHead>
-          <TableHead className="h-9 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/50">Started</TableHead>
+          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Strategy</TableHead>
+          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Market</TableHead>
+          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Method</TableHead>
+          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Status</TableHead>
+          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50 w-[180px]">Progress</TableHead>
+          <TableHead className="h-9 text-2xs font-black uppercase tracking-[0.15em] text-muted-foreground/50">Started</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -81,7 +81,7 @@ export const OptimizerTaskTable = memo(({ tasks }: { tasks: OptimizerTask[] }) =
               </TableCell>
               <TableCell className="py-2.5">
                 <span className={cn(
-                  "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider uppercase border",
+                  "inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-black tracking-wider uppercase border",
                   task.market === 'CN'
                     ? "text-amber-600/70 border-amber-500/20 bg-amber-500/5"
                     : "text-blue-600/70 border-blue-500/20 bg-blue-500/5"
@@ -96,7 +96,7 @@ export const OptimizerTaskTable = memo(({ tasks }: { tasks: OptimizerTask[] }) =
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-[10px] font-black tracking-wider uppercase px-2 py-0 rounded-full border",
+                    "text-2xs font-black tracking-wider uppercase px-2 py-0 rounded-full border",
                     STATUS_STYLES[statusKey] || STATUS_STYLES.idle
                   )}
                 >
@@ -106,12 +106,12 @@ export const OptimizerTaskTable = memo(({ tasks }: { tasks: OptimizerTask[] }) =
               <TableCell className="py-2.5">
                 <div className="flex items-center gap-2">
                   <Progress value={pct} className="h-1.5 flex-1" />
-                  <span className="text-[10px] font-mono font-bold tabular-nums text-muted-foreground/60 w-8 text-right">
+                  <span className="text-2xs font-mono font-bold tabular-nums text-muted-foreground/60 w-8 text-right">
                     {pct}%
                   </span>
                 </div>
               </TableCell>
-              <TableCell className="py-2.5 text-[11px] font-mono text-muted-foreground/50 tabular-nums">
+              <TableCell className="py-2.5 text-xs font-mono text-muted-foreground/50 tabular-nums">
                 {formatTime(task.started_at)}
               </TableCell>
             </TableRow>

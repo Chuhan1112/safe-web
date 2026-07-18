@@ -23,7 +23,7 @@ export const FloatingTooltip = ({ data, className }: FloatingTooltipProps) => {
   return (
     <div
       className={cn(
-        'pointer-events-none absolute right-3 top-3 z-10 min-w-[170px] rounded-lg border border-border/40 bg-background/80 px-3 py-2.5 text-[11px] backdrop-blur-md shadow-sm',
+        'pointer-events-none absolute right-3 top-3 z-10 min-w-[170px] rounded-lg border border-border/40 bg-background/80 px-3 py-2.5 text-xs backdrop-blur-md shadow-sm',
         className,
       )}
     >

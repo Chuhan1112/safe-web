@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMarket } from '@/contexts/MarketContext'
 
 import { API_BASE as API } from '@/lib/api'
@@ -195,11 +197,16 @@ export const ExperimentsPage = () => {
           placeholder="策略 ID"
           className="rounded border bg-background px-2 py-1 text-sm"
         />
-        <select value={filterMarket} onChange={(e) => setFilterMarket(e.target.value)} className="rounded border bg-background px-2 py-1 text-sm">
-          <option value="">全部市场</option>
-          <option value="US">美股</option>
-          <option value="CN">A股</option>
-        </select>
+        <Select value={filterMarket} onValueChange={setFilterMarket}>
+          <SelectTrigger className="h-9 w-32 text-sm">
+            <SelectValue placeholder="全部市场" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">全部市场</SelectItem>
+            <SelectItem value="US">美股</SelectItem>
+            <SelectItem value="CN">A股</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {selected.length >= 2 && (
@@ -215,7 +222,7 @@ export const ExperimentsPage = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-1.5 text-[10px]"
+                        className="h-6 px-1.5 text-2xs"
                         onClick={() => startEdit(exp)}
                       >
                         调参重跑
@@ -227,19 +234,19 @@ export const ExperimentsPage = () => {
                   {/* 参数编辑器 */}
                   {editingId === exp.id && rerunState[exp.id] && (
                     <div className="mt-2 space-y-1.5">
-                      <textarea
-                        className="w-full h-24 rounded border bg-background px-2 py-1 font-mono text-[11px] resize-y"
+                      <Textarea
+                        className="w-full h-24 font-mono text-xs resize-y"
                         value={rerunState[exp.id]!.paramsJson}
                         onChange={(e) => updateParamsJson(exp.id, e.target.value)}
                         spellCheck={false}
                       />
                       {rerunState[exp.id]!.error && (
-                        <div className="text-[10px] text-red-500">{rerunState[exp.id]!.error}</div>
+                        <div className="text-2xs text-red-500">{rerunState[exp.id]!.error}</div>
                       )}
                       <div className="flex gap-1">
                         <Button
                           size="sm"
-                          className="h-6 text-[10px]"
+                          className="h-6 text-2xs"
                           disabled={rerunState[exp.id]!.running}
                           onClick={() => runRerun(exp)}
                         >
@@ -248,7 +255,7 @@ export const ExperimentsPage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-6 text-[10px]"
+                          className="h-6 text-2xs"
                           onClick={() => cancelEdit(exp.id)}
                         >
                           取消
@@ -259,7 +266,7 @@ export const ExperimentsPage = () => {
 
                   {/* 原始 metrics */}
                   <div className="mt-1 space-y-0.5">
-                    <div className="text-[10px] text-muted-foreground mb-0.5">
+                    <div className="text-2xs text-muted-foreground mb-0.5">
                       {rerun ? '原始' : ''}
                     </div>
                     {Object.entries(exp.metrics).slice(0, 5).map(([k, v]) => (
@@ -273,7 +280,7 @@ export const ExperimentsPage = () => {
                   {/* 重跑结果 metrics */}
                   {rerun && (
                     <div className="mt-2 pt-2 border-t border-dashed space-y-0.5">
-                      <div className="text-[10px] text-primary mb-0.5">重跑结果</div>
+                      <div className="text-2xs text-primary mb-0.5">重跑结果</div>
                       {Object.entries(rerun.metrics).map(([k, v]) => (
                         <div key={k} className="flex justify-between">
                           <span className="text-muted-foreground">{k}</span>

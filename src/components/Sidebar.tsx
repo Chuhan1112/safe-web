@@ -1,4 +1,4 @@
-// src/components/Sidebar.tsx
+// src/components/Sidebar.tsx — 响应式侧边栏（桌面图标+文字 / 移动底部 Tab 栏）
 import { cn } from '@/lib/utils'
 import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
@@ -35,7 +35,7 @@ function NavButton({ item, isActive, onClick }: { item: { id: string; icon: Reac
     <button
       onClick={onClick}
       className={cn(
-        'group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+        'group relative flex h-10 w-10 md:h-10 md:w-12 items-center justify-center rounded-lg transition-colors flex-col gap-0.5',
         isActive
           ? 'bg-primary/10 text-primary'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -43,8 +43,9 @@ function NavButton({ item, isActive, onClick }: { item: { id: string; icon: Reac
       title={item.label}
     >
       <Icon className="h-[18px] w-[18px]" />
+      <span className="text-2xs leading-none hidden md:block">{item.label}</span>
       {isActive && (
-        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
+        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary hidden md:block" />
       )}
     </button>
   )
@@ -55,7 +56,6 @@ function DataStatusDot() {
   const [status, setStatus] = useState<'fresh' | 'stale' | 'unknown'>('unknown')
 
   useEffect(() => {
-    // 走真实健康汇总端点（含 market），按 healthy/stale/missing 计数判定新鲜度。
     const controller = new AbortController()
     fetch(`${API_BASE}/data/health/summary?market=${market}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
@@ -94,9 +94,9 @@ function SidebarMarketToggle() {
       <button
         onClick={() => setMarket('US')}
         className={cn(
-          'flex h-6 w-6 items-center justify-center rounded-md text-[9px] font-bold transition-colors',
+          'flex h-6 w-6 items-center justify-center rounded-md text-2xs font-bold transition-colors',
           isUS
-            ? 'bg-primary text-primary-foreground'
+            ? 'bg-market-us/10 text-market-us'
             : 'text-muted-foreground hover:text-foreground',
         )}
         title="美股"
@@ -106,9 +106,9 @@ function SidebarMarketToggle() {
       <button
         onClick={() => setMarket('CN')}
         className={cn(
-          'flex h-6 w-6 items-center justify-center rounded-md text-[9px] font-bold transition-colors',
+          'flex h-6 w-6 items-center justify-center rounded-md text-2xs font-bold transition-colors',
           !isUS
-            ? 'bg-accent text-accent-foreground'
+            ? 'bg-market-cn/10 text-market-cn'
             : 'text-muted-foreground hover:text-foreground',
         )}
         title="A股"
@@ -119,49 +119,91 @@ function SidebarMarketToggle() {
   )
 }
 
-export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpenPrivate, onNavigateToPrivate }: SidebarProps) => (
-  <nav className="flex h-screen w-14 flex-col items-center border-r border-border py-4">
-    <div className="mb-6 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-      <BarChart3 className="h-4 w-4 text-primary" />
-    </div>
+export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpenPrivate, onNavigateToPrivate }: SidebarProps) => {
+  const allItems = [...publicNavItems, ...(canOpenPrivate ? privateNavItems : [])]
 
-    <div className="flex flex-1 flex-col items-center gap-1">
-      {publicNavItems.map((item) => (
-        <NavButton
-          key={item.id}
-          item={item}
-          isActive={activeView === item.id}
-          onClick={() => onViewChange(item.id)}
-        />
-      ))}
-      {canOpenPrivate && (
-        <>
-          <div className="my-1 h-px w-6 bg-border" />
-          {/* private 视图内部自行路由 tab，此处所有 private 按钮统一高亮，仅作为入口指示 */}
-          {privateNavItems.map((item) => (
+  return (
+    <>
+      {/* 桌面端垂直侧边栏 — md+ 显示 */}
+      <nav className="hidden md:flex h-screen w-16 flex-col items-center border-r border-border py-4">
+        <div className="mb-6 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          <BarChart3 className="h-4 w-4 text-primary" />
+        </div>
+
+        <div className="flex flex-1 flex-col items-center gap-1">
+          {publicNavItems.map((item) => (
             <NavButton
               key={item.id}
               item={item}
-              isActive={activeView === 'private'}
-              onClick={() => onNavigateToPrivate(item.id)}
+              isActive={activeView === item.id}
+              onClick={() => onViewChange(item.id)}
             />
           ))}
-        </>
-      )}
-    </div>
+          {canOpenPrivate && (
+            <>
+              <div className="my-1 h-px w-6 bg-border" />
+              {privateNavItems.map((item) => (
+                <NavButton
+                  key={item.id}
+                  item={item}
+                  isActive={activeView === 'private'}
+                  onClick={() => onNavigateToPrivate(item.id)}
+                />
+              ))}
+            </>
+          )}
+        </div>
 
-    {/* 市场切换 */}
-    <SidebarMarketToggle />
+        <SidebarMarketToggle />
+        <DataStatusDot />
 
-    {/* 数据状态 */}
-    <DataStatusDot />
+        <button
+          onClick={onThemeToggle}
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          title="切换主题"
+        >
+          {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+        </button>
+      </nav>
 
-    <button
-      onClick={onThemeToggle}
-      className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      title="切换主题"
-    >
-      {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
-    </button>
-  </nav>
-)
+      {/* 移动端底部 Tab 栏 — 仅 <md 显示 */}
+      <nav className={cn(
+        'fixed bottom-0 left-0 right-0 z-50 flex flex-row items-center justify-around md:hidden',
+        'h-14 border-t border-border bg-background/95 backdrop-blur-md',
+      )}>
+        {allItems.map((item) => {
+          const Icon = item.icon
+          const isActive = item.id === activeView || (canOpenPrivate && activeView === 'private' && privateNavItems.some(p => p.id === item.id))
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                if (privateNavItems.some(p => p.id === item.id) && canOpenPrivate) {
+                  onNavigateToPrivate(item.id)
+                } else {
+                  onViewChange(item.id)
+                }
+              }}
+              className={cn(
+                'flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md transition-colors min-w-0',
+                isActive
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-2xs leading-none">{item.label}</span>
+            </button>
+          )
+        })}
+        <button
+          onClick={onThemeToggle}
+          className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          <span className="text-2xs leading-none">主题</span>
+        </button>
+      </nav>
+    </>
+  )
+}

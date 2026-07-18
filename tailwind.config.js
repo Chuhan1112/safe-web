@@ -38,6 +38,30 @@ export default {
           DEFAULT: 'hsl(var(--card) / <alpha-value>)',
           foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
         },
+        'market-us': '#1d4ed8',
+        'market-cn': '#dc2626',
+        data: {
+          up: 'hsl(var(--data-up) / <alpha-value>)',
+          down: 'hsl(var(--data-down) / <alpha-value>)',
+        },
+        chart: {
+          1: 'hsl(var(--chart-1) / <alpha-value>)',
+          2: 'hsl(var(--chart-2) / <alpha-value>)',
+          3: 'hsl(var(--chart-3) / <alpha-value>)',
+          4: 'hsl(var(--chart-4) / <alpha-value>)',
+          5: 'hsl(var(--chart-5) / <alpha-value>)',
+          6: 'hsl(var(--chart-6) / <alpha-value>)',
+        },
+      },
+      fontFamily: {
+        sans: ['Geist', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '0.875rem', letterSpacing: '0.01em' }],
+      },
+      maxWidth: {
+        page: '1680px',
       },
       borderRadius: {
         lg: 'var(--radius)',

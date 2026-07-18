@@ -1,6 +1,5 @@
 // src/components/ResearchPage.tsx
 import { useState, useEffect } from 'react'
-import { mockResearchReports, getReportById } from '@/mock/researchData'
 import type { ResearchReport } from '@/types/research'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,8 +10,8 @@ import { API_BASE } from '@/lib/api'
 
 export function ResearchPage() {
   const { market } = useMarket()
-  const [reports, setReports] = useState<ResearchReport[]>(mockResearchReports)
-  const [selectedId, setSelectedId] = useState<string>(mockResearchReports[0]?.id ?? '')
+  const [reports, setReports] = useState<ResearchReport[]>([])
+  const [selectedId, setSelectedId] = useState<string>('')
   const [search, setSearch] = useState('')
   const [apiAvailable, setApiAvailable] = useState(false)
 
@@ -44,7 +43,7 @@ export function ResearchPage() {
     return r.symbol.toLowerCase().includes(q) || r.companyName.toLowerCase().includes(q)
   })
 
-  const selected = getReportById(selectedId) ?? reports.find(r => r.id === selectedId)
+  const selected = reports.find(r => r.id === selectedId)
 
   return (
     <div className="flex h-full">
@@ -79,24 +78,24 @@ export function ResearchPage() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">{report.symbol}</span>
-                  <Badge variant="outline" className="text-[9px] px-1 py-0">
+                  <Badge variant="outline" className="text-2xs px-1 py-0">
                     {report.depth}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5 truncate">{report.companyName}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">{report.date}</p>
+                <p className="text-2xs text-muted-foreground/60 mt-0.5">{report.date}</p>
               </button>
             ))
           )}
         </div>
         <div className="p-2 border-t border-border space-y-1">
           {!apiAvailable && (
-            <div className="flex items-center justify-center gap-1 text-[10px] text-amber-500">
+            <div className="flex items-center justify-center gap-1 text-2xs text-amber-500">
               <WifiOff className="h-3 w-3" />
               API 离线，显示示例数据
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-2xs text-muted-foreground text-center">
             在对话中说 <code className="bg-muted px-1 rounded">研究一下 SYMBOL</code> 生成新报告
           </p>
         </div>
@@ -127,13 +126,13 @@ function ReportDetail({ report }: { report: ResearchReport }) {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold">{report.symbol}</h1>
-            <Badge variant="secondary" className="text-[10px]">{report.companyName}</Badge>
-            <Badge variant="outline" className="text-[10px]">{report.market}</Badge>
+            <Badge variant="secondary" className="text-2xs">{report.companyName}</Badge>
+            <Badge variant="outline" className="text-2xs">{report.market}</Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">{report.date} · {report.depth}</p>
         </div>
         <Badge variant="secondary" className={cn(
-          'text-[10px]',
+          'text-2xs',
           report.judgmentConfidence === 'high' && 'bg-emerald-500/10 text-emerald-500',
           report.judgmentConfidence === 'medium' && 'bg-amber-500/10 text-amber-500',
           report.judgmentConfidence === 'low' && 'bg-red-500/10 text-red-500',
@@ -182,7 +181,7 @@ function ReportDetail({ report }: { report: ResearchReport }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {report.snapshot.map((row, i) => (
               <div key={i} className="flex flex-col gap-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{row.label}</span>
+                <span className="text-2xs uppercase tracking-wider text-muted-foreground">{row.label}</span>
                 <span className="text-sm font-medium">{row.value}</span>
               </div>
             ))}
@@ -206,7 +205,7 @@ function ReportDetail({ report }: { report: ResearchReport }) {
                 <div>
                   <span className="font-medium">{s.name}</span>
                   <span className="text-muted-foreground"> — {s.description}</span>
-                  <span className="text-[10px] text-muted-foreground/60 ml-1">({s.timestamp})</span>
+                  <span className="text-2xs text-muted-foreground/60 ml-1">({s.timestamp})</span>
                 </div>
               </li>
             ))}
@@ -263,20 +262,20 @@ function ReportDetail({ report }: { report: ResearchReport }) {
             <HelpCircle className="h-3.5 w-3.5 text-primary" />
             Progressive Follow-Up
           </CardTitle>
-          <CardDescription className="text-[10px]">
+          <CardDescription className="text-2xs">
             rung: {report.followUp.rung} · route: {report.followUp.routeBinding} · impact: {report.followUp.decisionImpact}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm">{report.followUp.question}</p>
-          <p className="text-[10px] text-muted-foreground mt-1.5">
+          <p className="text-2xs text-muted-foreground mt-1.5">
             锚点: {report.followUp.objectAnchor}
           </p>
         </CardContent>
       </Card>
 
       {/* Disclaimer */}
-      <p className="text-[10px] text-muted-foreground/60 text-center pb-4">
+      <p className="text-2xs text-muted-foreground/60 text-center pb-4">
         Mira quick_map · 本输出是研究辅助，不是投资建议。
       </p>
     </div>

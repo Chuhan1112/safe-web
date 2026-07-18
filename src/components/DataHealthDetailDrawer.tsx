@@ -1,5 +1,6 @@
 import { memo, useCallback, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -58,15 +59,9 @@ export const DataHealthDetailDrawer = memo(function DataHealthDetailDrawer({
         <h2 className="text-lg font-semibold">
           {ticker.symbol}{ticker.name && ` - ${ticker.name}`}
         </h2>
-        <button
-          onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭">
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Content */}

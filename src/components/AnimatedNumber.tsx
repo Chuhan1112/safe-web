@@ -8,9 +8,6 @@ interface AnimatedNumberProps {
 
 let sharedRafId: number | null = null
 const sharedListeners = new Set<() => void>()
-let cancelRafTimeout: ReturnType<typeof setTimeout> | null = null
-
-const CANCEL_DELAY_MS = 1000
 
 function runSharedRaf() {
   const loop = () => {
@@ -22,23 +19,13 @@ function runSharedRaf() {
 
 function subscribeShared(fn: () => void): () => void {
   sharedListeners.add(fn)
-  // 有新订阅时取消延迟取消计时器
-  if (cancelRafTimeout !== null) {
-    clearTimeout(cancelRafTimeout)
-    cancelRafTimeout = null
-  }
   if (sharedRafId === null) runSharedRaf()
   return () => {
     sharedListeners.delete(fn)
+    // 最后实例卸载后立即停止共享 RAF，不留延迟
     if (sharedListeners.size === 0 && sharedRafId !== null) {
-      // 延迟取消：最后实例卸载后等 1s 再停止 RAF
-      cancelRafTimeout = setTimeout(() => {
-        if (sharedListeners.size === 0 && sharedRafId !== null) {
-          cancelAnimationFrame(sharedRafId)
-          sharedRafId = null
-        }
-        cancelRafTimeout = null
-      }, CANCEL_DELAY_MS)
+      cancelAnimationFrame(sharedRafId)
+      sharedRafId = null
     }
   }
 }

@@ -3,18 +3,13 @@ import { MetricsGrid } from '@/components/MetricsGrid'
 import { TradeLogsTable } from '@/components/TradeLogsTable'
 import { RebalanceLogsTable } from '@/components/RebalanceLogsTable'
 import { ChartSkeleton } from '@/components/skeletons/ChartSkeleton'
+import { TableSkeleton } from '@/components/skeletons/TableSkeleton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  mockBacktestMetrics,
-  mockEquityCurve,
-  mockDrawdownCurve,
-  mockTradeLogs,
-  mockRebalanceLogs,
-} from '@/mock/demoData'
 import { cn } from '@/lib/utils'
 import { Play, BarChart3, TrendingUp, Activity } from 'lucide-react'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { BacktestDiagnostics } from '@/components/BacktestDiagnostics'
 import { useMarket } from '@/contexts/MarketContext'
 
@@ -59,16 +54,19 @@ const REBALANCE_T = {
   cash_weight: 'Cash',
 } as const
 
-const WORKSPACE_COMPARE_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']
-
-// 模块级常量，避免每次渲染创建新对象导致 React.memo 失效
-const TRANSPARENT_COLORS = { backgroundColor: 'transparent' } as const
+import { getComparePalette } from '@/utils/chartColors'
+let _palette: string[] | null = null
+const WORKSPACE_COMPARE_PALETTE = () => {
+  if (!_palette) _palette = getComparePalette()
+  return _palette
+}
 
 export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
   const { market } = useMarket()
   const [chartView, setChartView] = useState<'equity' | 'drawdown'>('equity')
   const [bottomTab, setBottomTab] = useState<(typeof bottomTabs)[number]>('Metrics')
   const [loading, setLoading] = useState(false)
+  const [tableLoading] = useState(false)
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)
 
   // 切市场时清空本地状态（当前展示 mock 数据，但保持一致性）
@@ -81,12 +79,12 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
   const handleHoverTime = useCallback((time: string | null) => setHoveredDate(time), [])
 
   const metrics = useMemo(() => [
-    { label: 'CAGR', value: mockBacktestMetrics.cagr, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-emerald-500' },
-    { label: 'Sharpe', value: mockBacktestMetrics.sharpe, format: (v: number) => v.toFixed(2), color: 'text-foreground' },
-    { label: 'Max DD', value: mockBacktestMetrics.maxDrawdown, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-red-500' },
-    { label: 'Win Rate', value: mockBacktestMetrics.winRate, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-foreground' },
-    { label: 'Trades', value: mockBacktestMetrics.totalTrades, format: (v: number) => String(Math.round(v)), color: 'text-foreground' },
-    { label: 'Return', value: mockBacktestMetrics.totalReturn, format: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, color: 'text-emerald-500' },
+    { label: 'CAGR', value: 0, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-muted-foreground' },
+    { label: 'Sharpe', value: 0, format: (v: number) => v.toFixed(2), color: 'text-muted-foreground' },
+    { label: 'Max DD', value: 0, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-muted-foreground' },
+    { label: 'Win Rate', value: 0, format: (v: number) => `${v.toFixed(1)}%`, color: 'text-muted-foreground' },
+    { label: 'Trades', value: 0, format: (v: number) => String(Math.round(v)), color: 'text-muted-foreground' },
+    { label: 'Return', value: 0, format: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, color: 'text-muted-foreground' },
   ], [])
 
   if (activeView === 'health') return <Suspense fallback={null}><DataHealthPage /></Suspense>
@@ -111,7 +109,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-8">
+    <PageContainer>
       {/* Toolbar */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -170,9 +168,9 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
             <Suspense fallback={<ChartSkeleton />}>
               <div className="w-full h-[400px]">
                 <BacktestChart
-                  data={chartView === 'equity' ? mockEquityCurve : mockDrawdownCurve}
+                  data={[]}
                   onHoverTime={handleHoverTime}
-                  colors={TRANSPARENT_COLORS}
+                  colors={{ backgroundColor: 'transparent' }}
                 />
               </div>
             </Suspense>
@@ -186,10 +184,10 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
       {/* Diagnostics */}
       <div className="mb-4">
         <BacktestDiagnostics metrics={{
-          totalReturn: mockBacktestMetrics.totalReturn,
-          cagr: mockBacktestMetrics.cagr,
-          sharpe: mockBacktestMetrics.sharpe,
-          totalTrades: mockBacktestMetrics.totalTrades,
+          totalReturn: 0,
+          cagr: 0,
+          sharpe: 0,
+          totalTrades: 0,
         }} />
       </div>
 
@@ -214,12 +212,16 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
       {/* Bottom content */}
       <Card>
         <CardContent className="p-0">
-          {bottomTab === 'Metrics' && (
+          {tableLoading ? (
+            <TableSkeleton rows={5} cols={4} />
+          ) : (
+            <>
+              {bottomTab === 'Metrics' && (
             <div className="p-6">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                 {metrics.map((m) => (
                   <div key={m.label} className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.label}</span>
+                    <span className="text-2xs uppercase tracking-wider text-muted-foreground">{m.label}</span>
                     <span className={cn('text-2xl font-bold tabular-nums', m.color)}>
                       {m.format(m.value)}
                     </span>
@@ -230,10 +232,10 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
           )}
           {bottomTab === 'Trades' && (
             <TradeLogsTable
-              logs={mockTradeLogs}
+              logs={[]}
               logFilter=""
               t={TRADE_T}
-              comparePalette={WORKSPACE_COMPARE_PALETTE}
+              comparePalette={WORKSPACE_COMPARE_PALETTE()}
               handleTickerClick={(t) => console.log('click', t)}
               highlightDate={hoveredDate}
               market={market}
@@ -241,17 +243,19 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
           )}
           {bottomTab === 'Rebalance' && (
             <RebalanceLogsTable
-              logs={mockRebalanceLogs}
+              logs={[]}
               logFilter=""
               t={REBALANCE_T}
               handleTickerClick={(t) => console.log('click', t)}
-              comparePalette={WORKSPACE_COMPARE_PALETTE}
+              comparePalette={WORKSPACE_COMPARE_PALETTE()}
               highlightDate={hoveredDate}
               market={market}
             />
+            )}
+            </>
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   )
 }

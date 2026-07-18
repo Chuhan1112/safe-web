@@ -3,9 +3,13 @@ import { Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { SignalExplanationDrawer } from '@/components/SignalExplanationDrawer'
 import { useMarket } from '@/contexts/MarketContext'
 import { usePageVisible } from '@/hooks/usePageVisible'
+import { useMarketColors } from '@/hooks/useMarketColors'
+import { usePolling } from '@/hooks/usePolling'
 import { API_BASE as API } from '@/lib/api'
 
 interface SignalItem {
@@ -76,6 +80,7 @@ function actionBadgeVariant(action: string) {
 
 export function SignalsPage() {
   const { market } = useMarket()
+  const { upClass, downClass } = useMarketColors()
   const [strategyId, setStrategyId] = useState('ADAPTIVE_MOMENTUM')
   const [loading, setLoading] = useState(false)
   const [signalsData, setSignalsData] = useState<SignalsResponse | null>(null)
@@ -137,20 +142,26 @@ export function SignalsPage() {
     } catch { /* pulse 静默失败 */ }
   }, [signalsData, market])
 
-  // 用 ref 保存最新 fetchPulse，避免 interval 因 fetchPulse 身份变化而重建
-  const fetchPulseRef = useRef(fetchPulse)
-  useEffect(() => { fetchPulseRef.current = fetchPulse }, [fetchPulse])
-
-  // pulse 轮询: 每 45s 刷新一次盘中价格
+  // pulse 轮询: 每 45s 刷新一次盘中价格（页面 hidden 时自动暂停）
+  const pulseEnabled = !!(signalsData && signalsData.metadata?.has_live_quotes)
   useEffect(() => {
-    if (!signalsData || !signalsData.metadata?.has_live_quotes) {
-      setPulseData(null)
+    if (!pulseEnabled) setPulseData(null)
+  }, [pulseEnabled])
+
+  // 初次立即拉取一次 pulse，后续由 usePolling 定时触发
+  const hasPulseRef = useRef(false)
+  useEffect(() => {
+    if (!pulseEnabled) {
+      hasPulseRef.current = false
       return
     }
-    fetchPulseRef.current()
-    const interval = setInterval(() => fetchPulseRef.current(), 45000)
-    return () => clearInterval(interval)
-  }, [signalsData])
+    if (!hasPulseRef.current) {
+      fetchPulse()
+      hasPulseRef.current = true
+    }
+  }, [pulseEnabled, fetchPulse])
+
+  usePolling(fetchPulse, 45000, pulseEnabled)
 
   const fetchSignals = useCallback(async () => {
     setLoading(true)
@@ -205,7 +216,7 @@ export function SignalsPage() {
   }, [strategyId, market])
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-8 space-y-4">
+    <PageContainer className="space-y-4">
       {/* Controls */}
       <Card>
         <CardHeader className="pb-3">
@@ -215,15 +226,16 @@ export function SignalsPage() {
           <div className="flex flex-wrap items-end gap-4">
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">策略</label>
-              <select
-                value={strategyId}
-                onChange={(e) => setStrategyId(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                {(ALL_STRATEGIES[market] || ALL_STRATEGIES.US).map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <Select value={strategyId} onValueChange={setStrategyId}>
+                <SelectTrigger className="h-9 w-48 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(ALL_STRATEGIES[market] || ALL_STRATEGIES.US).map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Button onClick={fetchSignals} disabled={loading} size="sm">
@@ -286,7 +298,7 @@ export function SignalsPage() {
                           </Badge>
                         </td>
                         <td className="py-2.5 pr-4 text-right font-mono">
-                          {(sig.weight * 100).toFixed(1)}%
+                          {sig.weight != null ? (sig.weight * 100).toFixed(1) + '%' : '--'}
                         </td>
                         <td className="py-2.5 pr-4 text-right font-mono">
                           {sig.price?.toFixed(2) ?? '--'}
@@ -340,8 +352,8 @@ export function SignalsPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" style={{ animationPlayState: pageVisible ? 'running' : 'paused' }} />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  <span className={`absolute inline-flex h-full w-full rounded-full bg-data-up/60 opacity-75 ${pageVisible ? 'animate-ping' : ''}`} />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-data-up" />
                 </span>
                 盘中实时 {pulseData.market_open ? '● 交易中' : '○ 盘后'}
               </CardTitle>
@@ -365,7 +377,7 @@ export function SignalsPage() {
                         <span className="font-medium">{p.ticker}</span>
                         <span className="font-mono">{cur?.toFixed(2) ?? '-'}</span>
                         {changePct != null && (
-                          <span className={`font-mono ${changePct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <span className={`font-mono ${changePct >= 0 ? upClass : downClass}`}>
                             {changePct >= 0 ? '+' : ''}{(changePct * 100).toFixed(2)}%
                           </span>
                         )}
@@ -383,9 +395,9 @@ export function SignalsPage() {
                   盘中突破信号 ({pulseData.enhancements.breakout_signals.length})
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {pulseData.enhancements.breakout_signals.slice(0, 10).map((bs) => (
+                  {pulseData.enhancements.breakout_signals.slice(0, 10).map((bs, i) => (
                     <Badge
-                      key={`${bs.symbol}:${bs.type}`}
+                      key={`${bs.symbol}:${bs.type}-${i}`}
                       variant={bs.type.includes('up') || bs.type === 'strong_up' ? 'default' : 'destructive'}
                       className="text-xs"
                     >
@@ -438,11 +450,11 @@ export function SignalsPage() {
                       <td className="py-1.5 px-3 font-mono text-muted-foreground">{r.rank}</td>
                       <td className="py-1.5 px-3 font-medium">{r.ticker}</td>
                       <td className="py-1.5 px-3 text-right font-mono">{r.price?.toFixed(2) ?? '-'}</td>
-                      <td className={`py-1.5 px-3 text-right font-mono ${(r.momentum ?? 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <td className={`py-1.5 px-3 text-right font-mono ${(r.momentum ?? 0) > 0 ? upClass : downClass}`}>
                         {r.momentum != null ? (r.momentum * 100).toFixed(1) + '%' : '-'}
                       </td>
                       <td className="py-1.5 px-3 text-center">
-                        {r.above_sma === true ? <span className="text-green-600">▲</span> : r.above_sma === false ? <span className="text-red-400">▼</span> : '-'}
+                        {r.above_sma === true ? <span className={upClass}>▲</span> : r.above_sma === false ? <span className={downClass}>▼</span> : '-'}
                       </td>
                     </tr>
                   ))}
@@ -452,6 +464,6 @@ export function SignalsPage() {
           </CardContent>
         )}
       </Card>
-    </div>
+    </PageContainer>
   )
 }

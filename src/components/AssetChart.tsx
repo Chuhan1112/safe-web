@@ -1,10 +1,13 @@
 import { CandlestickSeries, ColorType, createChart, LineSeries } from 'lightweight-charts'
 import type { BusinessDay, IChartApi, MouseEventParams, Time } from 'lightweight-charts'
-import { useCallback, useEffect, useRef, useState, memo } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useIsDark } from '@/hooks/useIsDark'
 import { timeToIso, toBusinessDate } from '@/utils/chartHoverLogic'
+import { resolveChartColor } from '@/utils/chartColors'
 import { FloatingTooltip, type TooltipData } from '@/components/FloatingTooltip'
 import { IndicatorToggles, type IndicatorConfig } from '@/components/IndicatorToggles'
+import { EmptyState } from '@/components/EmptyState'
+import { TrendingUp } from 'lucide-react'
 
 interface AssetChartProps {
   data: {
@@ -46,7 +49,7 @@ const indicatorLabelMap: Record<string, { label: string; color: string }> = {
   bb_lower: { label: 'BB Lower', color: '#a855f7' },
 }
 
-const AssetChartInner = ({ data, theme }: AssetChartProps) => {
+export const AssetChart = ({ data, theme }: AssetChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const [dimensions, setDimensions] = useState({ width: 0, height: 400 })
@@ -151,8 +154,8 @@ const AssetChartInner = ({ data, theme }: AssetChartProps) => {
       })
 
       const candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
-        wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+        upColor: resolveChartColor('--data-up'), downColor: resolveChartColor('--data-down'), borderVisible: false,
+        wickUpColor: resolveChartColor('--data-up'), wickDownColor: resolveChartColor('--data-down'),
       })
       candleSeries.setData(
         normalized.map((item) => ({
@@ -230,7 +233,6 @@ const AssetChartInner = ({ data, theme }: AssetChartProps) => {
       chartRef.current = null
       seriesRefs.current.clear()
       console.error('Failed to create asset chart', error)
-      throw error
     }
   }, [data, dimensions.width, dimensions.height])
 
@@ -244,6 +246,10 @@ const AssetChartInner = ({ data, theme }: AssetChartProps) => {
     })
   }, [indicators])
 
+  if (!data || data.length === 0) {
+    return <EmptyState icon={TrendingUp} title="暂无K线数据" description="请检查数据源或等待数据同步完成" />
+  }
+
   return (
     <div className="space-y-2">
       <IndicatorToggles indicators={indicators} onToggle={handleIndicatorToggle} />
@@ -254,6 +260,3 @@ const AssetChartInner = ({ data, theme }: AssetChartProps) => {
     </div>
   )
 }
-
-// React.memo 避免父组件渲染时无 props 变化导致子组件重渲染
-export const AssetChart = memo(AssetChartInner)

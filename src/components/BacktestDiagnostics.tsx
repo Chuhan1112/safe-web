@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronDown, ChevronRight, Info } from 'lucide-react'
-import { useState, memo } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -39,7 +39,7 @@ const COMMON_ISSUES = [
   },
 ]
 
-const BacktestDiagnosticsInner = ({ metrics }: BacktestDiagnosticsProps) => {
+export function BacktestDiagnostics({ metrics }: BacktestDiagnosticsProps) {
   const [open, setOpen] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
 
@@ -65,7 +65,7 @@ const BacktestDiagnosticsInner = ({ metrics }: BacktestDiagnosticsProps) => {
           </div>
           <div className="flex items-center gap-1">
             {hasSuspiciousResult && (
-              <span className="text-[10px] text-amber-600 font-medium">
+              <span className="text-2xs text-amber-600 font-medium">
                 检测到疑似异常
               </span>
             )}
@@ -100,7 +100,7 @@ const BacktestDiagnosticsInner = ({ metrics }: BacktestDiagnosticsProps) => {
               {expandedIdx === i && (
                 <ul className="ml-6 mt-1 space-y-0.5">
                   {issue.causes.map((cause, j) => (
-                    <li key={j} className="text-[11px] text-muted-foreground list-disc">
+                    <li key={j} className="text-xs text-muted-foreground list-disc">
                       {cause}
                     </li>
                   ))}
@@ -113,6 +113,3 @@ const BacktestDiagnosticsInner = ({ metrics }: BacktestDiagnosticsProps) => {
     </Card>
   )
 }
-
-// React.memo 避免父组件渲染时无 props 变化导致子组件重渲染
-export const BacktestDiagnostics = memo(BacktestDiagnosticsInner)

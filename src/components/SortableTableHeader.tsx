@@ -1,4 +1,4 @@
-// src/components/SortableTableHeader.tsx
+// src/components/SortableTableHeader.tsx — 统一可排序表头，含 aria-sort 无障碍属性
 import { cn } from '@/lib/utils'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { TableHead } from '@/components/ui/table'
@@ -6,7 +6,7 @@ import { TableHead } from '@/components/ui/table'
 export type SortDirection = 'asc' | 'desc' | null
 
 interface SortableTableHeaderProps {
-  label: string
+  label: React.ReactNode
   sortKey: string
   currentSort: { key: string; direction: SortDirection }
   onSort: (key: string) => void
@@ -24,15 +24,20 @@ export const SortableTableHeader = ({
 }: SortableTableHeaderProps) => {
   const isActive = currentSort.key === sortKey
   const direction = isActive ? currentSort.direction : null
+  const ariaSort = direction === 'asc' ? 'ascending' : direction === 'desc' ? 'descending' : 'none' as const
 
   return (
     <TableHead
       className={cn(
-        'cursor-pointer select-none hover:text-foreground/80 transition-colors',
+        'cursor-pointer select-none transition-colors',
+        'text-2xs font-semibold uppercase tracking-wider text-muted-foreground',
+        'hover:text-foreground/80',
         align === 'right' && 'text-right',
+        isActive && 'text-foreground',
         className,
       )}
       onClick={() => onSort(sortKey)}
+      aria-sort={ariaSort}
     >
       <span className="inline-flex items-center gap-1">
         {label}

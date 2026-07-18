@@ -17,11 +17,16 @@ vi.mock("@/components/AssetChart", () => ({
 }))
 
 import { AssetDetailDialog } from "@/components/AssetDetailDialog"
+import { MarketProvider } from "@/contexts/MarketContext"
+
+function WithProvider({ children }: { children: React.ReactNode }) {
+  return <MarketProvider>{children}</MarketProvider>
+}
 
 describe("AssetDetailDialog", () => {
   it("renders an explicit fallback when no data loader is provided", () => {
     const html = renderToStaticMarkup(
-      <AssetDetailDialog ticker="AAPL" open onOpenChange={() => {}} />,
+      <WithProvider><AssetDetailDialog ticker="AAPL" open onOpenChange={() => {}} /></WithProvider>,
     )
 
     expect(html).toContain("Market data unavailable")
@@ -31,7 +36,7 @@ describe("AssetDetailDialog", () => {
   // 回归：CN ticker 的 TradingView URL 需去除 .SS/.SZ 后缀
   it("converts SS suffix to SHA: prefix for TradingView URL", () => {
     const html = renderToStaticMarkup(
-      <AssetDetailDialog ticker="600519.SS" open onOpenChange={() => {}} market="CN" />,
+      <WithProvider><AssetDetailDialog ticker="600519.SS" open onOpenChange={() => {}} market="CN" /></WithProvider>,
     )
 
     expect(html).toContain("SHA:600519")
@@ -39,7 +44,7 @@ describe("AssetDetailDialog", () => {
 
   it("converts SZ suffix to SZSE: prefix for TradingView URL", () => {
     const html = renderToStaticMarkup(
-      <AssetDetailDialog ticker="000001.SZ" open onOpenChange={() => {}} market="CN" />,
+      <WithProvider><AssetDetailDialog ticker="000001.SZ" open onOpenChange={() => {}} market="CN" /></WithProvider>,
     )
 
     expect(html).toContain("SZSE:000001")
@@ -47,7 +52,7 @@ describe("AssetDetailDialog", () => {
 
   it("keeps US ticker unchanged for TradingView URL", () => {
     const html = renderToStaticMarkup(
-      <AssetDetailDialog ticker="AAPL" open onOpenChange={() => {}} market="US" />,
+      <WithProvider><AssetDetailDialog ticker="AAPL" open onOpenChange={() => {}} market="US" /></WithProvider>,
     )
 
     expect(html).toContain("tradingview.com/symbols/AAPL/")

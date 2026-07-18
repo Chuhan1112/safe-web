@@ -17,9 +17,9 @@ export function MarketToggle({ className }: MarketToggleProps) {
       <button
         onClick={() => handleClick('US')}
         className={cn(
-          'px-2.5 py-1 text-[10px] font-bold rounded-md transition-all',
+          'px-2.5 py-1 text-2xs font-bold rounded-md transition-all',
           market === 'US'
-            ? 'bg-primary text-primary-foreground shadow-sm'
+            ? 'bg-market-us/10 text-market-us shadow-sm'
             : 'text-muted-foreground hover:text-foreground',
         )}
       >
@@ -28,9 +28,9 @@ export function MarketToggle({ className }: MarketToggleProps) {
       <button
         onClick={() => handleClick('CN')}
         className={cn(
-          'px-2.5 py-1 text-[10px] font-bold rounded-md transition-all',
+          'px-2.5 py-1 text-2xs font-bold rounded-md transition-all',
           market === 'CN'
-            ? 'bg-red-500 text-white shadow-sm'
+            ? 'bg-market-cn/10 text-market-cn shadow-sm'
             : 'text-muted-foreground hover:text-foreground',
         )}
       >

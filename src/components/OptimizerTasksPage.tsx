@@ -1,8 +1,10 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { OptimizerTaskTable, type OptimizerTask } from '@/components/OptimizerTaskTable'
 import { Button } from '@/components/ui/button'
+import { PageContainer } from '@/components/layout/PageContainer'
 import { RefreshCw } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
+import { usePolling } from '@/hooks/usePolling'
 import { API_BASE } from '@/lib/api'
 
 const POLL_INTERVAL_MS = 3000
@@ -16,7 +18,6 @@ export function OptimizerTasksPage() {
   const [tasks, setTasks] = useState<OptimizerTask[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -38,23 +39,8 @@ export function OptimizerTasksPage() {
     fetchTasks()
   }, [fetchTasks])
 
-  // Auto-refresh when tasks are running
-  useEffect(() => {
-    if (hasRunningTasks(tasks)) {
-      intervalRef.current = setInterval(fetchTasks, POLL_INTERVAL_MS)
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-    }
-  }, [tasks, fetchTasks])
+  // 有 running 任务时自动轮询，页面 hidden 时暂停
+  usePolling(fetchTasks, POLL_INTERVAL_MS, hasRunningTasks(tasks))
 
   const handleRefresh = useCallback(() => {
     setLoading(true)
@@ -64,7 +50,7 @@ export function OptimizerTasksPage() {
   const runningCount = tasks.filter((t) => t.status === 'running' || t.status === 'idle').length
 
   return (
-    <div className="max-w-[1200px] mx-auto w-full px-6 py-8">
+    <PageContainer>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-lg font-black tracking-tight">Optimization Tasks</h1>
@@ -96,6 +82,6 @@ export function OptimizerTasksPage() {
       )}
 
       <OptimizerTaskTable tasks={tasks} />
-    </div>
+    </PageContainer>
   )
 }

@@ -177,8 +177,8 @@ export const DataHealthPage = memo(function DataHealthPage() {
             <span className={cn(
               'rounded-md px-2 py-0.5 text-xs font-bold',
               market === 'US'
-                ? 'bg-primary/10 text-primary'
-                : 'bg-red-500/10 text-red-500',
+                ? 'bg-market-us/10 text-market-us'
+                : 'bg-market-cn/10 text-market-cn',
             )}>
               {market === 'US' ? '美股' : 'A股'}
             </span>

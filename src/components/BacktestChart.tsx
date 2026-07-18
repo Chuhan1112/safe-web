@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, memo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   AreaSeries,
   ColorType,
@@ -10,6 +10,9 @@ import {
 } from 'lightweight-charts'
 import { useIsDark } from '@/hooks/useIsDark'
 import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
+import { resolveChartColor } from '@/utils/chartColors'
+import { EmptyState } from '@/components/EmptyState'
+import { LineChart } from 'lucide-react'
 
 interface ChartSeries {
   id: string
@@ -40,7 +43,7 @@ const EMPTY_SERIES: ChartSeries[] = []
 // 模块级调色板常量，避免每次渲染创建新数组
 const DEFAULT_PALETTE = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#14b8a6']
 
-const BacktestChartInner = ({ data, series, onHoverTime, colors = {}, theme }: ChartProps) => {
+export const BacktestChart = ({ data, series, onHoverTime, colors = {}, theme }: ChartProps) => {
   const normalizedData = useMemo(() => data ?? EMPTY_DATA, [data])
   const normalizedSeries = useMemo(() => series ?? EMPTY_SERIES, [series])
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -90,9 +93,9 @@ const BacktestChartInner = ({ data, series, onHoverTime, colors = {}, theme }: C
 
   const {
     backgroundColor = 'transparent',
-    lineColor = '#2962FF',
-    areaTopColor = 'rgba(41, 98, 255, 0.4)',
-    areaBottomColor = 'rgba(41, 98, 255, 0.0)',
+    lineColor = resolveChartColor('--chart-1'),
+    areaTopColor = resolveChartColor('--chart-1', 0.4),
+    areaBottomColor = resolveChartColor('--chart-1', 0.0),
   } = colors
   const textColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
 
@@ -253,6 +256,10 @@ const BacktestChartInner = ({ data, series, onHoverTime, colors = {}, theme }: C
     }
   }, [normalizedData, normalizedSeries, emitHover, onHoverTime, lineColor, areaTopColor, areaBottomColor])
 
+  if (normalizedData.length === 0 && normalizedSeries.length === 0) {
+    return <EmptyState icon={LineChart} title="暂无回测数据" description="请运行回测以查看收益曲线和回撤" />
+  }
+
   return (
     <div
       ref={chartContainerRef}
@@ -262,6 +269,3 @@ const BacktestChartInner = ({ data, series, onHoverTime, colors = {}, theme }: C
     />
   )
 }
-
-// React.memo 避免父组件渲染时无 props 变化的子组件重渲染
-export const BacktestChart = memo(BacktestChartInner)

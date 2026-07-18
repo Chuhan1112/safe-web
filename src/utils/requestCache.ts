@@ -5,6 +5,8 @@ interface CacheEntry<T> {
 
 class RequestCache {
   private store = new Map<string, CacheEntry<unknown>>()
+  /** 最大缓存条目数，超出后按 LRU 驱逐（Map 插入序即 LRU） */
+  private maxSize = 200
 
   get<T>(key: string): T | null {
     const entry = this.store.get(key)
@@ -17,6 +19,10 @@ class RequestCache {
   }
 
   set<T>(key: string, data: T, ttlMs = 60_000): void {
+    if (this.store.size >= this.maxSize) {
+      const first = this.store.keys().next().value
+      if (first !== undefined) this.store.delete(first)
+    }
     this.store.set(key, { data, expiresAt: Date.now() + ttlMs })
   }
 
