@@ -10,7 +10,7 @@ import {
 } from 'lightweight-charts'
 import { useIsDark } from '@/hooks/useIsDark'
 import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
-import { resolveChartColor } from '@/utils/chartColors'
+import { resolveChartColor, withAlpha } from '@/utils/chartColors'
 import { EmptyState } from '@/components/EmptyState'
 import { LineChart } from 'lucide-react'
 
@@ -183,8 +183,8 @@ export const BacktestChart = memo(function BacktestChart({ data, series, onHover
         const lineWidthValue = seriesItem.lineWidth ?? 2
         const nextSeries = chart.addSeries(AreaSeries, {
           lineColor: color,
-          topColor: `${color}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`,
-          bottomColor: `${color}00`,
+          topColor: withAlpha(color, opacity),
+          bottomColor: withAlpha(color, 0),
           lineWidth: lineWidthValue,
         })
         if (seriesItem.data && seriesItem.data.length > 0) {
