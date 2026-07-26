@@ -38,7 +38,7 @@ function App() {
 
   useLayoutEffect(() => {
     if (typeof document === 'undefined') return
-    document.documentElement.classList.remove('light', 'dark')
+    document.documentElement.classList.remove('light', 'dark', 'perplexity')
     document.documentElement.classList.add(theme)
   }, [theme])
 
