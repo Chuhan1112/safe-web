@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from "react-dom/server"
 import { act, renderHook, waitFor } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
-import { useIsDark } from "@/hooks/useIsDark"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { getInitialTheme, useIsDark } from "@/hooks/useIsDark"
 
 vi.mock("lucide-react", () => ({
   BarChart3: () => <span>BarChart3</span>,
@@ -148,5 +148,54 @@ describe("useIsDark", () => {
     act(() => {
       document.documentElement.classList.remove("light")
     })
+  })
+})
+
+describe("getInitialTheme", () => {
+  beforeEach(() => {
+    localStorage.clear()
+    document.documentElement.classList.remove("light", "dark", "perplexity")
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+    document.documentElement.classList.remove("light", "dark", "perplexity")
+  })
+
+  it("restores perplexity theme from localStorage", () => {
+    localStorage.setItem("theme", "perplexity")
+    expect(getInitialTheme()).toBe("perplexity")
+  })
+
+  it("restores light and dark from localStorage", () => {
+    localStorage.setItem("theme", "light")
+    expect(getInitialTheme()).toBe("light")
+    localStorage.setItem("theme", "dark")
+    expect(getInitialTheme()).toBe("dark")
+  })
+
+  it("falls back to dark for invalid localStorage value", () => {
+    localStorage.setItem("theme", "invalid-value")
+    expect(getInitialTheme()).toBe("dark")
+  })
+
+  it("reads perplexity from <html> class when localStorage is empty", () => {
+    document.documentElement.classList.add("perplexity")
+    expect(getInitialTheme()).toBe("perplexity")
+  })
+
+  it("reads light from <html> class when localStorage is empty", () => {
+    document.documentElement.classList.add("light")
+    expect(getInitialTheme()).toBe("light")
+  })
+
+  it("defaults to dark when no stored theme and no class", () => {
+    expect(getInitialTheme()).toBe("dark")
+  })
+
+  it("localStorage wins over <html> class", () => {
+    localStorage.setItem("theme", "perplexity")
+    document.documentElement.classList.add("light")
+    expect(getInitialTheme()).toBe("perplexity")
   })
 })

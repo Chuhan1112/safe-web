@@ -2,6 +2,24 @@ import { useEffect, useState } from 'react'
 
 export type Theme = 'light' | 'dark' | 'perplexity'
 
+const VALID_THEMES: readonly Theme[] = ['light', 'dark', 'perplexity']
+
+/**
+ * 解析初始主题：localStorage 白名单优先，其次 <html> 类名，默认 dark。
+ * localStorage 只认三个合法值，脏数据回退。
+ */
+export function getInitialTheme(): Theme {
+  if (typeof localStorage !== 'undefined') {
+    const savedTheme = localStorage.getItem('theme')
+    if (VALID_THEMES.includes(savedTheme as Theme)) return savedTheme as Theme
+  }
+  if (typeof document !== 'undefined') {
+    if (document.documentElement.classList.contains('light')) return 'light'
+    if (document.documentElement.classList.contains('perplexity')) return 'perplexity'
+  }
+  return 'dark'
+}
+
 /**
  * Reactively tracks whether the current theme is dark (dark or perplexity).
  * If `theme` is provided, it wins over DOM observation.

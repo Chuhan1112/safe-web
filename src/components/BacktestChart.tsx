@@ -8,7 +8,7 @@ import {
   type MouseEventParams,
   type Time,
 } from 'lightweight-charts'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useIsDark, type Theme } from '@/hooks/useIsDark'
 import { normalizeDateString, normalizeHoverTime } from '@/utils/chartHoverLogic'
 import { resolveChartColor, withAlpha } from '@/utils/chartColors'
 import { EmptyState } from '@/components/EmptyState'
@@ -34,7 +34,7 @@ interface ChartProps {
     areaTopColor?: string
     areaBottomColor?: string
   }
-  theme?: 'light' | 'dark'
+  theme?: Theme
 }
 
 const EMPTY_DATA: { time: string; value: number }[] = []

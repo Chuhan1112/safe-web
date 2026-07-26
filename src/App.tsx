@@ -8,22 +8,12 @@ import {
 } from '@/lib/privateOverlay'
 import type { ComponentType } from 'react'
 import { MarketProvider } from '@/contexts/MarketContext'
-import type { Theme } from '@/hooks/useIsDark'
+import { getInitialTheme, type Theme } from '@/hooks/useIsDark'
 
 function App() {
   const privateOverlayEnabled = isPrivateOverlayEnabled()
   const privateOverlayPresent = hasPrivateOverlayModule()
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof localStorage !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme')
-      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'perplexity') return savedTheme
-    }
-    if (typeof document !== 'undefined') {
-      if (document.documentElement.classList.contains('light')) return 'light'
-      if (document.documentElement.classList.contains('perplexity')) return 'perplexity'
-    }
-    return 'dark'
-  })
+  const [theme, setTheme] = useState<Theme>(getInitialTheme)
   const [activeView, setActiveView] = useState('backtest')
   const [privateComponent, setPrivateComponent] = useState<ComponentType | null>(null)
   const [privateLoadState, setPrivateLoadState] = useState<'idle' | 'loading' | 'ready'>(

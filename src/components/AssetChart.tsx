@@ -1,7 +1,7 @@
 import { CandlestickSeries, ColorType, createChart, LineSeries } from 'lightweight-charts'
 import type { BusinessDay, IChartApi, MouseEventParams, Time } from 'lightweight-charts'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useIsDark, type Theme } from '@/hooks/useIsDark'
 import { useMarketColors } from '@/hooks/useMarketColors'
 import { timeToIso, toBusinessDate } from '@/utils/chartHoverLogic'
 import { resolveChartColor } from '@/utils/chartColors'
@@ -26,7 +26,7 @@ interface AssetChartProps {
       bb_lower?: number
     }
   }[]
-  theme?: 'light' | 'dark'
+  theme?: Theme
 }
 
 const getChartTheme = (isDark: boolean) => ({
