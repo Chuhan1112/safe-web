@@ -4,11 +4,12 @@ import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, 
 import { useMarket } from '@/contexts/MarketContext'
 import { api } from '@/lib/api/client'
 import { useState, useEffect } from 'react'
+import type { Theme } from '@/hooks/useIsDark'
 
 interface SidebarProps {
   activeView: string
   onViewChange: (view: string) => void
-  theme: 'light' | 'dark'
+  theme: Theme
   onThemeToggle: () => void
   canOpenPrivate: boolean
   onNavigateToPrivate: (tab: string) => void
@@ -172,7 +173,7 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
           className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title="切换主题"
         >
-          {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+          {theme !== 'light' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
         </button>
       </nav>
 
@@ -210,7 +211,7 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
           onClick={onThemeToggle}
           className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
         >
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {theme !== 'light' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           <span className="text-2xs leading-none">主题</span>
         </button>
       </nav>

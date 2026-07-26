@@ -8,18 +8,19 @@ import {
 } from '@/lib/privateOverlay'
 import type { ComponentType } from 'react'
 import { MarketProvider } from '@/contexts/MarketContext'
+import type { Theme } from '@/hooks/useIsDark'
 
 function App() {
   const privateOverlayEnabled = isPrivateOverlayEnabled()
   const privateOverlayPresent = hasPrivateOverlayModule()
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
     if (typeof localStorage !== 'undefined') {
       const savedTheme = localStorage.getItem('theme')
-      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'perplexity') return savedTheme
     }
     if (typeof document !== 'undefined') {
       if (document.documentElement.classList.contains('light')) return 'light'
-      if (document.documentElement.classList.contains('dark')) return 'dark'
+      if (document.documentElement.classList.contains('perplexity')) return 'perplexity'
     }
     return 'dark'
   })
@@ -49,7 +50,10 @@ function App() {
   useEffect(() => {
     if (typeof document === 'undefined') return
     const syncTheme = () => {
-      const nextTheme = document.documentElement.classList.contains('light') ? 'light' : 'dark'
+      const cls = document.documentElement.classList
+      let nextTheme: Theme = 'dark'
+      if (cls.contains('light')) nextTheme = 'light'
+      else if (cls.contains('perplexity')) nextTheme = 'perplexity'
       setTheme((current) => (current === nextTheme ? current : nextTheme))
     }
     const observer = new MutationObserver(syncTheme)
@@ -88,7 +92,7 @@ function App() {
           else if (view !== 'private') setActiveView(view)
         }}
         theme={theme}
-        onThemeToggle={() => setTheme((v) => (v === 'dark' ? 'light' : 'dark'))}
+        onThemeToggle={() => setTheme((v) => (v === 'light' ? 'dark' : v === 'dark' ? 'perplexity' : 'light'))}
         canOpenPrivate={!!canOpenPrivate}
         onNavigateToPrivate={(tab) => {
           if (!canOpenPrivate) return
