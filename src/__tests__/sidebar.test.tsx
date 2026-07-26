@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from "react-dom/server"
-import { renderHook } from "@testing-library/react"
-import { describe, expect, it, vi, beforeEach } from "vitest"
+import { act, renderHook, waitFor } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
 import { useIsDark } from "@/hooks/useIsDark"
 
 vi.mock("lucide-react", () => ({
@@ -93,29 +93,6 @@ describe("Sidebar", () => {
     expect(html).toContain("Moon")
   })
 
-  it("cycles theme: light → dark → perplexity → light", () => {
-    const order = ["light", "dark", "perplexity", "light"] as const
-    let current = order[0]
-    const toggle = vi.fn(() => {
-      const idx = order.indexOf(current)
-      current = order[(idx + 1) % order.length]
-    })
-
-    const { rerender } = renderToStaticMarkup
-      ? { rerender: undefined }
-      : ({} as any)
-    // simulate toggle cycle
-    for (let i = 0; i < 3; i++) {
-      const html = renderToStaticMarkup(
-        <Sidebar {...defaultProps} theme={current} onThemeToggle={toggle} />,
-      )
-      // click the toggle
-      toggle()
-    }
-    // After 3 toggles from light, we should be back to light
-    expect(current).toBe("light")
-  })
-
   it("cycles theme titles correctly through three states", () => {
     const titles = {
       light: '切换到 Dark 主题',
@@ -147,53 +124,29 @@ describe("useIsDark", () => {
     expect(result.current).toBe(false)
   })
 
-  it("observes DOM class for perplexity and returns true", () => {
+  it("observes DOM class for perplexity and returns true", async () => {
     document.documentElement.classList.remove("light", "perplexity")
-    document.documentElement.classList.add("perplexity")
+    act(() => {
+      document.documentElement.classList.add("perplexity")
+    })
     const { result } = renderHook(() => useIsDark())
-    expect(result.current).toBe(true)
-    document.documentElement.classList.remove("perplexity")
+    await waitFor(() => expect(result.current).toBe(true))
+    act(() => {
+      document.documentElement.classList.remove("perplexity")
+    })
   })
 
-  it("observes DOM class changes reactively", () => {
+  it("observes DOM class changes reactively", async () => {
     document.documentElement.classList.remove("light", "perplexity")
     const { result } = renderHook(() => useIsDark())
-    expect(result.current).toBe(true) // no 'light' class → dark
+    await waitFor(() => expect(result.current).toBe(true)) // no 'light' class → dark
 
-    document.documentElement.classList.add("light")
-    // trigger MutationObserver
-    const { result: result2 } = renderHook(() => useIsDark())
-    expect(result2.current).toBe(false)
-    document.documentElement.classList.remove("light")
-  })
-})
-
-describe("localStorage theme persistence", () => {
-  beforeEach(() => {
-    localStorage.clear()
-    document.documentElement.classList.remove("light", "dark", "perplexity")
-  })
-
-  it("restores perplexity theme from localStorage on init", () => {
-    localStorage.setItem("theme", "perplexity")
-    const saved = localStorage.getItem("theme")
-    expect(saved).toBe("perplexity")
-    // App init logic: savedTheme === 'perplexity' → return savedTheme
-    expect(saved === "light" || saved === "dark" || saved === "perplexity").toBe(true)
-  })
-
-  it("falls back to dark for invalid localStorage value", () => {
-    localStorage.setItem("theme", "invalid-value")
-    const saved = localStorage.getItem("theme")
-    // App init: savedTheme is not one of the 3 valid values → fall through to default
-    const isValid = saved === "light" || saved === "dark" || saved === "perplexity"
-    expect(isValid).toBe(false)
-    // Default should be 'dark' per App.tsx init logic
-  })
-
-  it("falls back to dark when localStorage is empty", () => {
-    const saved = localStorage.getItem("theme")
-    expect(saved).toBeNull()
-    // App.tsx returns 'dark' when no saved theme and no 'light' class on <html>
+    act(() => {
+      document.documentElement.classList.add("light")
+    })
+    await waitFor(() => expect(result.current).toBe(false))
+    act(() => {
+      document.documentElement.classList.remove("light")
+    })
   })
 })
