@@ -86,6 +86,46 @@
     --chart-5: 270 70% 65%;
     --chart-6: 186 92% 48%;
   }
+
+  .perplexity {
+    --background: 20 0.3% 20%;
+    --foreground: 20 0.2% 87%;
+
+    --card: 20 0.2% 23%;
+    --card-foreground: 20 0.2% 87%;
+
+    --popover: 20 0.2% 23%;
+    --popover-foreground: 20 0.2% 87%;
+
+    --primary: 20 0.2% 87%;
+    --primary-foreground: 20 0.3% 20%;
+
+    --secondary: 20 0.2% 26%;
+    --secondary-foreground: 20 0.2% 87%;
+
+    --muted: 20 0.2% 23%;
+    --muted-foreground: 20 1.5% 60%;
+
+    --accent: 184 83% 53%;
+    --accent-foreground: 20 0.3% 20%;
+
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 20 0.3% 20%;
+
+    --border: 20 0.2% 26%;
+    --input: 20 0.2% 26%;
+    --ring: 184 83% 53%;
+
+    --data-up: 142 76% 46%;
+    --data-down: 0 84% 65%;
+    --market-cn: 0 84% 60%;
+    --chart-1: 217 91% 65%;
+    --chart-2: 160 84% 48%;
+    --chart-3: 35 92% 55%;
+    --chart-4: 0 84% 65%;
+    --chart-5: 270 70% 65%;
+    --chart-6: 186 92% 48%;
+  }
 }
 
 @layer base {
@@ -152,7 +192,8 @@
   margin: 0;
 }
 
-.dark .rdp-root {
+.dark .rdp-root,
+.perplexity .rdp-root {
   --rdp-accent-background-color: hsl(var(--primary) / 0.20);
   --rdp-range_middle-background-color: hsl(var(--primary) / 0.20);
   --rdp-range_middle-color: hsl(var(--foreground));
