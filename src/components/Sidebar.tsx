@@ -1,6 +1,6 @@
 // src/components/Sidebar.tsx — 响应式侧边栏（桌面图标+文字 / 移动底部 Tab 栏）
 import { cn } from '@/lib/utils'
-import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff } from 'lucide-react'
+import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Sparkles, Search, Wifi, WifiOff } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
 import { api } from '@/lib/api/client'
 import { useState, useEffect } from 'react'
@@ -170,10 +170,10 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
 
         <button
           onClick={onThemeToggle}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          title="切换主题"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title={theme === 'light' ? '切换到 Dark 主题' : theme === 'dark' ? '切换到 Perplexity 主题' : '切换到 Light 主题'}
         >
-          {theme !== 'light' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+          {theme === 'light' ? <Sun className="h-[18px] w-[18px]" /> : theme === 'dark' ? <Moon className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}
         </button>
       </nav>
 
@@ -210,8 +210,9 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
         <button
           onClick={onThemeToggle}
           className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+          title={theme === 'light' ? '切换到 Dark 主题' : theme === 'dark' ? '切换到 Perplexity 主题' : '切换到 Light 主题'}
         >
-          {theme !== 'light' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {theme === 'light' ? <Sun className="h-5 w-5" /> : theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
           <span className="text-2xs leading-none">主题</span>
         </button>
       </nav>

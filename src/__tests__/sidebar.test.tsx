@@ -13,6 +13,7 @@ vi.mock("lucide-react", () => ({
   Search: () => <span>Search</span>,
   Moon: () => <span>Moon</span>,
   Sun: () => <span>Sun</span>,
+  Sparkles: () => <span>Sparkles</span>,
   Wifi: () => <span>Wifi</span>,
   WifiOff: () => <span>WifiOff</span>,
 }))
@@ -61,7 +62,7 @@ describe("Sidebar", () => {
 
   it("renders theme toggle button", () => {
     const html = renderToStaticMarkup(<Sidebar {...defaultProps} />)
-    expect(html).toContain("切换主题")
+    expect(html).toContain("切换到 Perplexity 主题")
   })
 
   it("highlights active public item", () => {
