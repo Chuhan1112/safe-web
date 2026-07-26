@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useIsDark, type Theme } from '@/hooks/useIsDark'
 import { useMarketColors } from '@/hooks/useMarketColors'
 import { timeToIso, toBusinessDate } from '@/utils/chartHoverLogic'
-import { resolveChartColor } from '@/utils/chartColors'
+import { resolveChartColor, withAlpha } from '@/utils/chartColors'
 import { FloatingTooltip, type TooltipData } from '@/components/FloatingTooltip'
 import { IndicatorToggles, type IndicatorConfig } from '@/components/IndicatorToggles'
 import { EmptyState } from '@/components/EmptyState'
@@ -18,6 +18,7 @@ interface AssetChartProps {
     low: number
     close: number
     volume?: number
+    intraday?: boolean
     indicators?: {
       sma20?: number
       sma50?: number
@@ -186,15 +187,24 @@ export const AssetChart = memo(function AssetChart({ data, theme }: AssetChartPr
       })
 
       const candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: palette.up, downColor: palette.down, borderVisible: false,
+        upColor: palette.up, downColor: palette.down,
+        // 边框色与实体同色：普通 K 线视觉不变，盘中 K 线可用 per-bar borderColor 加边框区分
+        borderVisible: true, borderUpColor: palette.up, borderDownColor: palette.down,
         wickUpColor: palette.up, wickDownColor: palette.down,
       })
       candleSeries.setData(
-        normalized.map((item) => ({
-          time: item.businessDay as Time,
-          open: Number(item.open), high: Number(item.high),
-          low: Number(item.low), close: Number(item.close),
-        })),
+        normalized.map((item) => {
+          const base = Number(item.close) >= Number(item.open) ? palette.up : palette.down
+          return {
+            time: item.businessDay as Time,
+            open: Number(item.open), high: Number(item.high),
+            low: Number(item.low), close: Number(item.close),
+            // 盘中快照 bar：半透明实体 + 实色边框，标识"未收盘的临时数据"
+            ...(item.intraday
+              ? { color: withAlpha(base, 0.35), wickColor: withAlpha(base, 0.6), borderColor: base }
+              : {}),
+          }
+        }),
       )
       seriesRefs.current.set('candle', candleSeries)
 
@@ -245,6 +255,7 @@ export const AssetChart = memo(function AssetChart({ data, theme }: AssetChartPr
           open: Number(row.open), high: Number(row.high),
           low: Number(row.low), close: Number(row.close),
           changePercent: changePct,
+          intraday: row.intraday === true,
           indicators: {
             sma20: row.indicators?.sma20,
             sma50: row.indicators?.sma50,

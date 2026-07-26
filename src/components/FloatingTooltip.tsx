@@ -9,6 +9,7 @@ export interface TooltipData {
   low: number
   close: number
   changePercent?: number
+  intraday?: boolean
   indicators?: Record<string, number | undefined>
   indicatorLabels?: Record<string, { label: string; color: string }>
 }
@@ -29,7 +30,14 @@ export const FloatingTooltip = ({ data, className }: FloatingTooltipProps) => {
         className,
       )}
     >
-      <div className="mb-2 font-bold text-foreground/90">{data.date}</div>
+      <div className="mb-2 flex items-center gap-2 font-bold text-foreground/90">
+        {data.date}
+        {data.intraday && (
+          <span className="rounded bg-amber-500/15 px-1.5 py-px text-[10px] font-semibold text-amber-500">
+            盘中
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 tabular-nums">
         <span className="text-muted-foreground/50">O</span>

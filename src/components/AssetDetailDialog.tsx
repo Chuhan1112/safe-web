@@ -13,6 +13,7 @@ interface TickerChartBar {
   low: number
   close: number
   volume?: number
+  intraday?: boolean
   indicators?: {
     sma20?: number
     sma50?: number
@@ -26,6 +27,7 @@ interface TickerDataResponse {
   data: TickerChartBar[]
   current_price?: number
   change_percent?: number | null
+  is_intraday?: boolean
 }
 
 interface AssetDetailDialogProps {
@@ -105,6 +107,11 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
                   <span className={`text-xs px-2 py-0.5 rounded font-mono font-medium ${isPositive ? 'bg-data-up/10 ' + upClass : 'bg-data-down/10 ' + downClass}`}>
                       {changeSign}{changePct?.toFixed(2)}%
                   </span>
+                  {data.is_intraday && (
+                    <span className="rounded bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-500">
+                      盘中数据
+                    </span>
+                  )}
                 </div>
               ) : null
             })()}
