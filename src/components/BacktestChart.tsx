@@ -94,7 +94,7 @@ export const BacktestChart = memo(function BacktestChart({ data, series, onHover
   const {
     backgroundColor = 'transparent',
     lineColor = resolveChartColor('--chart-1'),
-    areaTopColor = resolveChartColor('--chart-1', 0.4),
+    areaTopColor = resolveChartColor('--chart-1', isDark ? 0.4 : 0.55),
     areaBottomColor = resolveChartColor('--chart-1', 0.0),
   } = colors
   const textColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
