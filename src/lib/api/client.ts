@@ -314,6 +314,39 @@ export interface PortfolioSignalResult {
     metadata: Record<string, any>;
 }
 
+export interface MacdIndicators { dif: number | null; dea: number | null; hist: number | null; state: 'golden' | 'dead' | 'flat' }
+export interface AnalysisIndicators {
+  close: number | null
+  macd: MacdIndicators
+  kdj: { k: number | null; d: number | null; j: number | null }
+  rsi14: number | null
+  sma20: number | null; sma50: number | null; sma200: number | null
+}
+export interface BuyPointSignal {
+  rule_id: string; name: string; triggered: boolean
+  trigger_date: string | null; note: string
+}
+export interface RuleBacktest {
+  rule_id: string; name: string; signals: number
+  avg_ret_5d: number; avg_ret_10d: number; avg_ret_20d: number
+  win_rate_5d: number; win_rate_10d: number; win_rate_20d: number
+  last_trigger: string | null
+}
+export interface LiveSnapshot {
+  source: string; date: string; close: number
+  dif: number; dea: number
+  rsi_6: number; rsi_12: number; rsi_24: number
+  kdj_k: number; kdj_d: number; kdj_j: number
+}
+export interface AnalysisResult {
+  symbol: string; market: string; as_of: string
+  indicators: AnalysisIndicators
+  buy_points: BuyPointSignal[]
+  backtest: RuleBacktest[]
+  live_snapshot: LiveSnapshot | null
+  errors: string[]
+}
+
 export interface ScorerItem {
     ticker: string;
     absolute_score: number;
@@ -658,6 +691,17 @@ export const api = {
         }
         const raw = await response.json();
         return normalizeBacktestResult(raw);
+    },
+
+    async getAnalysis(symbol: string, market?: string): Promise<AnalysisResult> {
+        const params = new URLSearchParams();
+        if (market) params.set('market', market);
+        const response = await fetch(`${API_BASE}/analysis/${encodeURIComponent(symbol)}?${params.toString()}`);
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.detail || `Failed to fetch analysis for ${symbol}`);
+        }
+        return response.json();
     },
 
     async getPortfolioSignals(preset?: string, weights?: Record<string, number>, strategyParams?: Record<string, any>, market?: string): Promise<PortfolioSignalResult> {

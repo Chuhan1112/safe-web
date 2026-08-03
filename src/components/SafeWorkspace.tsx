@@ -18,6 +18,7 @@ const DataHealthPage = lazy(() => import('@/components/DataHealthPage').then(m =
 const ExperimentsPage = lazy(() => import('@/components/ExperimentsPage').then(m => ({ default: m.ExperimentsPage })))
 const OptimizerTasksPage = lazy(() => import('@/components/OptimizerTasksPage').then(m => ({ default: m.OptimizerTasksPage })))
 const SignalsPage = lazy(() => import('@/components/SignalsPage').then(m => ({ default: m.SignalsPage })))
+const TechAnalysisPage = lazy(() => import('@/components/TechAnalysisPage').then(m => ({ default: m.TechAnalysisPage })))
 const ResearchPage = lazy(() => import('@/components/ResearchPage').then(m => ({ default: m.ResearchPage })))
 
 interface SafeWorkspaceProps {
@@ -93,6 +94,7 @@ export function SafeWorkspace({ activeView = 'backtest' }: SafeWorkspaceProps) {
   if (activeView === 'experiments') return <Suspense fallback={null}><ExperimentsPage /></Suspense>
   if (activeView === 'optimizer') return <Suspense fallback={null}><OptimizerTasksPage /></Suspense>
   if (activeView === 'signals') return <Suspense fallback={null}><SignalsPage /></Suspense>
+  if (activeView === 'analysis') return <Suspense fallback={null}><TechAnalysisPage /></Suspense>
   if (activeView === 'research') return <Suspense fallback={null}><ResearchPage /></Suspense>
 
   if (activeView === 'screener' || activeView === 'scorer' || activeView === 'data') {

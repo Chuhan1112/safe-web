@@ -44,6 +44,7 @@ describe("Sidebar", () => {
     expect(html).toContain("健康")
     expect(html).toContain("实验")
     expect(html).toContain("信号")
+    expect(html).toContain("分析")
     expect(html).toContain("研究")
   })
 

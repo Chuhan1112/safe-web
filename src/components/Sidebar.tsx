@@ -21,6 +21,7 @@ const publicNavItems = [
   { id: 'health', icon: HeartPulse, label: '健康' },
   { id: 'experiments', icon: FlaskConical, label: '实验' },
   { id: 'signals', icon: ListChecks, label: '信号' },
+  { id: 'analysis', icon: LineChart, label: '分析' },
   { id: 'research', icon: Search, label: '研究' },
 ]
 
