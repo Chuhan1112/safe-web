@@ -40,12 +40,8 @@ export function TechAnalysisPage() {
     setSymbol(e.target.value)
   }, [])
 
-  const handleChipClick = useCallback((chip: string) => {
-    setSymbol(chip)
-  }, [])
-
-  const handleAnalyze = useCallback(async () => {
-    const trimmed = symbol.trim().toUpperCase()
+  const handleAnalyze = useCallback(async (overrideSymbol?: string) => {
+    const trimmed = (overrideSymbol ?? symbol).trim().toUpperCase()
     if (!trimmed) return
 
     setLoading(true)
@@ -66,6 +62,11 @@ export function TechAnalysisPage() {
       setLoading(false)
     }
   }, [symbol, market])
+
+  const handleChipClick = useCallback((chip: string) => {
+    setSymbol(chip)
+    handleAnalyze(chip)
+  }, [handleAnalyze])
 
   const macdStateColor = (state: string) => {
     switch (state) {
@@ -104,7 +105,7 @@ export function TechAnalysisPage() {
                 onChange={handleChange}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleAnalyze() }}
               />
-              <Button onClick={handleAnalyze} disabled={loading} className="gap-1.5">
+              <Button onClick={() => handleAnalyze()} disabled={loading} className="gap-1.5">
                 <Zap className="h-3.5 w-3.5" />
                 分析
               </Button>

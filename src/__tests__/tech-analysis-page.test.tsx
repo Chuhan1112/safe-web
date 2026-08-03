@@ -51,9 +51,11 @@ vi.mock('@/lib/api/client', () => ({
   },
 }))
 
-// useMarket 无 Provider 会 throw（MarketContext.tsx:30），必须 mock
+// useMarket 无 Provider 会 throw（MarketContext.tsx:30），必须 mock。
+// mockMarketRef.current 用对象包装避免 vi.mock 提升时的 TDZ 问题。
+const mockMarketRef = { current: 'US' as string }
 vi.mock('@/contexts/MarketContext', () => ({
-  useMarket: () => ({ market: 'US', setMarket: vi.fn() }),
+  useMarket: () => ({ market: mockMarketRef.current, setMarket: vi.fn() }),
 }))
 
 import { api } from '@/lib/api/client'
@@ -72,6 +74,7 @@ const MOCK_CHART = { symbol: 'AAPL', data: [{ time: '2026-08-01', open: 300, hig
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockMarketRef.current = 'US'
 })
 
 afterEach(() => {
@@ -104,5 +107,22 @@ describe('TechAnalysisPage', () => {
     fireEvent.change(screen.getByPlaceholderText(/输入代码/), { target: { value: 'AAPL' } })
     fireEvent.click(screen.getByRole('button', { name: /分析/i }))
     await waitFor(() => expect(screen.getByText(/不可用/)).toBeTruthy())
+  })
+
+  it('切市场清空分析结果（CLAUDE.md 陷阱 14）', async () => {
+    ;(api.getTickerData as any).mockResolvedValue(MOCK_CHART)
+    ;(api.getAnalysis as any).mockResolvedValue(MOCK_ANALYSIS)
+    const { rerender } = render(<TechAnalysisPage />)
+    fireEvent.change(screen.getByPlaceholderText('输入代码，如 AAPL / NVDA / 600519'), { target: { value: 'AAPL' } })
+    fireEvent.click(screen.getByRole('button', { name: /分析/i }))
+    await waitFor(() => expect(screen.getAllByText('MACD 金叉').length).toBeGreaterThanOrEqual(1))
+
+    // 切换到 CN 市场
+    mockMarketRef.current = 'CN'
+    rerender(<TechAnalysisPage />)
+
+    // 结果应被清空（useEffect([market]) 清空 analysis/chart/error）
+    await waitFor(() => expect(screen.queryByText('MACD 金叉')).toBeNull())
+    expect(screen.queryByText(/实时·腾讯口径/)).toBeNull()
   })
 })
