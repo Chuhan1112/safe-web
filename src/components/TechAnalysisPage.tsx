@@ -27,7 +27,7 @@ export function TechAnalysisPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
-  const [chart, setChart] = useState<any | null>(null)
+  const [chart, setChart] = useState<{ data: { time: string; open: number; high: number; low: number; close: number; volume: number; indicators?: Record<string, unknown> }[] } | null>(null)
 
   // 切市场清空结果（CLAUDE.md 陷阱 14）
   useEffect(() => {
@@ -56,8 +56,8 @@ export function TechAnalysisPage() {
       ])
       setChart(tickerData)
       setAnalysis(analysisData)
-    } catch (err: any) {
-      setError(err?.message || '分析失败')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '分析失败')
     } finally {
       setLoading(false)
     }
