@@ -1,6 +1,7 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { DayPicker, type DayButtonProps } from "react-day-picker"
+import { motion, useReducedMotion, type Transition } from "motion/react"
 import "react-day-picker/style.css"
 
 import { cn } from "@/lib/utils"
@@ -8,71 +9,204 @@ import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
+export interface CalendarPreset {
+    label: string
+    getRange: (today: Date) => { from: Date; to: Date }
+}
+
+/** 位移走弹簧；颜色（opacity）单独走慢半拍的 tween */
+const SPRING: Transition = { type: "spring", stiffness: 500, damping: 35, mass: 1 }
+const COLOR_FADE: Transition = { delay: 0.08, duration: 0.25, ease: "easeOut" }
+
+/**
+ * range 模式的动画日格子：
+ * - range_middle：整格铺 fill 片段（左右各溢出半格，与相邻格连成整条）
+ * - range_start / range_end：半段 fill + 实心 knob + 弹簧描边圈
+ * 位移走 spring，fill 颜色 opacity 慢 0.08s 跟随 —— preset 切换看起来像一个整体在移动。
+ */
+function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProps) {
+    const reduced = useReducedMotion()
+    const transition = reduced ? { duration: 0 } : SPRING
+
+    const isStart = !!modifiers.range_start
+    const isEnd = !!modifiers.range_end
+    const isEdge = isStart || isEnd
+    const isMiddle = !!modifiers.range_middle
+    const isSingleDay = isStart && isEnd
+
+    const dir = day.outside ? (day.date.getMonth() % 2 === 0 ? "ltr" : "rtl") : "ltr"
+
+    return (
+        <span className="rdp-anim-cell relative inline-flex h-9 w-9 items-center justify-center">
+            {/* middle 整格 fill */}
+            {isMiddle && (
+                <motion.span
+                    aria-hidden
+                    layout={reduced ? undefined : true}
+                    transition={reduced ? { duration: 0 } : { ...SPRING, opacity: COLOR_FADE }}
+                    initial={false}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-y-0 -left-2 -right-2 bg-primary/15"
+                />
+            )}
+            {/* edge 半段 fill：start 铺右半，end 铺左半（单日时收成圆点） */}
+            {isEdge && !isSingleDay && (
+                <motion.span
+                    aria-hidden
+                    layout={reduced ? undefined : true}
+                    transition={
+                        reduced ? { duration: 0 } : { ...SPRING, opacity: COLOR_FADE }
+                    }
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className={cn(
+                        "absolute inset-y-0 w-[calc(50%+8px)] bg-primary/15",
+                        isStart ? "right-0 rounded-r-md" : "left-0 rounded-l-md",
+                        dir
+                    )}
+                />
+            )}
+            <button
+                type="button"
+                className={cn(
+                    "rdp-anim-day relative z-10 flex h-9 w-9 items-center justify-center rounded-md border border-transparent p-0 text-sm font-normal text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground aria-selected:opacity-100",
+                    isEdge &&
+                        "bg-primary text-primary-foreground font-medium shadow-sm hover:bg-primary hover:text-primary-foreground",
+                    modifiers.selected && !isEdge && "bg-secondary/60 text-foreground font-medium",
+                    className
+                )}
+                {...rest}
+            />
+            {/* knob 弹簧描边圈 */}
+            {isEdge && (
+                <motion.span
+                    aria-hidden
+                    layoutId={isStart ? "cal-knob-from" : "cal-knob-to"}
+                    transition={transition}
+                    className="pointer-events-none absolute inset-0 z-20 rounded-full border-2 border-primary"
+                />
+            )}
+        </span>
+    )
+}
+
 function Calendar({
     className,
     classNames,
     showOutsideDays = true,
+    presets,
     ...props
-}: CalendarProps) {
+}: CalendarProps & { presets?: CalendarPreset[] }) {
+    const isRangeMode = props.mode === "range"
+    const selected = (props as { selected?: unknown }).selected as
+        | { from?: Date; to?: Date }
+        | undefined
+
+    const presetRow =
+        isRangeMode && presets?.length ? (
+            <div
+                data-cal-presets
+                data-testid="cal-presets"
+                className="mb-2 flex items-center gap-1.5 px-1"
+            >
+                {presets.map((p) => {
+                    const r = p.getRange(new Date())
+                    const active =
+                        !!selected?.from &&
+                        !!selected?.to &&
+                        selected.from.toDateString() === r.from.toDateString() &&
+                        selected.to.toDateString() === r.to.toDateString()
+                    return (
+                        <button
+                            key={p.label}
+                            type="button"
+                            onClick={(e) => {
+                                ;(
+                                    props.onSelect as
+                                        | ((
+                                              range: { from: Date; to: Date },
+                                              triggerDate: Date,
+                                              modifiers: Record<string, boolean>,
+                                              event: React.MouseEvent<HTMLButtonElement>
+                                          ) => void)
+                                        | undefined
+                                )?.(r, r.to, { range_start: true, range_end: true }, e)
+                            }}
+                            className={cn(
+                                "h-6 rounded-md px-2 text-xs font-medium transition-colors",
+                                active
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                            )}
+                        >
+                            {p.label}
+                        </button>
+                    )
+                })}
+            </div>
+        ) : null
+
     return (
-        <DayPicker
-            showOutsideDays={showOutsideDays}
-            className={cn("p-4 relative", className)}
-            classNames={{
-                months: "rdp-months flex flex-col sm:flex-row space-y-4 sm:space-x-6 sm:space-y-0",
-                month: "rdp-month space-y-3",
-                month_caption: "rdp-month_caption mb-3 flex justify-center pt-1 relative items-center",
-                caption_label: "rdp-caption_label text-sm font-semibold tracking-tight text-foreground",
-                dropdowns: "rdp-dropdowns flex justify-center gap-2",
-                dropdown: "rdp-dropdown cursor-pointer focus:outline-none text-sm font-medium text-foreground",
-                dropdown_root: "rdp-dropdown_root inline-flex items-center rounded-md border border-border bg-transparent px-2.5 py-1 text-sm shadow-sm transition-colors hover:bg-secondary hover:text-foreground",
-                months_dropdown: "rdp-months_dropdown",
-                years_dropdown: "rdp-years_dropdown",
-                nav: "rdp-nav flex items-center gap-1.5",
-                button_previous: cn(
-                    "rdp-button_previous absolute left-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
-                    buttonVariants({ variant: "outline" }),
-                    "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
-                ),
-                button_next: cn(
-                    "rdp-button_next absolute right-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
-                    buttonVariants({ variant: "outline" }),
-                    "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
-                ),
-                month_grid: "rdp-month_grid w-full border-collapse",
-                weekdays: "rdp-weekdays",
-                weekday: "rdp-weekday pb-2.5 pt-1 text-xs font-medium text-muted-foreground/70 uppercase",
-                weeks: "rdp-weeks",
-                week: "rdp-week",
-                day: "rdp-day text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
-                day_button: cn(
-                    "rdp-day_button",
-                    buttonVariants({ variant: "ghost" }),
-                    "h-9 w-9 rounded-md border border-transparent p-0 text-sm font-normal text-foreground/80 transition-all duration-200 hover:bg-secondary hover:text-foreground aria-selected:opacity-100"
-                ),
-                selected:
-                    "rdp-selected [&>.rdp-day_button]:bg-primary [&>.rdp-day_button]:text-primary-foreground [&>.rdp-day_button]:shadow-sm [&>.rdp-day_button]:font-medium [&>.rdp-day_button]:border-transparent",
-                today: "rdp-today text-foreground [&>.rdp-day_button]:bg-secondary/60 [&>.rdp-day_button]:text-foreground [&>.rdp-day_button]:font-medium",
-                outside:
-                    "rdp-outside text-muted-foreground/40 [&>.rdp-day_button]:text-muted-foreground/40",
-                disabled: "rdp-disabled text-muted-foreground/30 [&>.rdp-day_button]:text-muted-foreground/30",
-                range_middle:
-                    "rdp-range_middle text-foreground [&>.rdp-day_button]:rounded-none [&>.rdp-day_button]:border-transparent [&>.rdp-day_button]:bg-transparent [&>.rdp-day_button]:shadow-none [&>.rdp-day_button]:text-foreground",
-                range_end: "rdp-range_end [&>.rdp-day_button]:bg-primary [&>.rdp-day_button]:text-primary-foreground",
-                range_start: "rdp-range_start [&>.rdp-day_button]:bg-primary [&>.rdp-day_button]:text-primary-foreground",
-                hidden: "rdp-hidden invisible",
-                ...classNames,
-            }}
-            components={{
-                Chevron: ({ orientation, ...rest }) => {
-                    if (orientation === "left") {
-                        return <ChevronLeft className="h-4 w-4" {...rest} />
-                    }
-                    return <ChevronRight className="h-4 w-4" {...rest} />
-                },
-            }}
-            {...props}
-        />
+        <div className={cn("relative", className)}>
+            {presetRow}
+            <DayPicker
+                showOutsideDays={showOutsideDays}
+                className={cn("p-4 relative", presetRow && "pt-1")}
+                classNames={{
+                    months: "rdp-months flex flex-col sm:flex-row space-y-4 sm:space-x-6 sm:space-y-0",
+                    month: "rdp-month space-y-3",
+                    month_caption: "rdp-month_caption mb-3 flex justify-center pt-1 relative items-center",
+                    caption_label: "rdp-caption_label text-sm font-semibold tracking-tight text-foreground",
+                    dropdowns: "rdp-dropdowns flex justify-center gap-2",
+                    dropdown: "rdp-dropdown cursor-pointer focus:outline-none text-sm font-medium text-foreground",
+                    dropdown_root: "rdp-dropdown_root inline-flex items-center rounded-md border border-border bg-transparent px-2.5 py-1 text-sm shadow-sm transition-colors hover:bg-secondary hover:text-foreground",
+                    months_dropdown: "rdp-months_dropdown",
+                    years_dropdown: "rdp-years_dropdown",
+                    nav: "rdp-nav flex items-center gap-1.5",
+                    button_previous: cn(
+                        "rdp-button_previous absolute left-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
+                        buttonVariants({ variant: "outline" }),
+                        "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
+                    ),
+                    button_next: cn(
+                        "rdp-button_next absolute right-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
+                        buttonVariants({ variant: "outline" }),
+                        "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
+                    ),
+                    month_grid: "rdp-month_grid w-full border-collapse",
+                    weekdays: "rdp-weekdays",
+                    weekday: "rdp-weekday pb-2.5 pt-1 text-xs font-medium text-muted-foreground/70 uppercase",
+                    weeks: "rdp-weeks",
+                    week: "rdp-week",
+                    day: "rdp-day text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
+                    day_button: "",
+                    selected:
+                        "rdp-selected [&>.rdp-anim-cell>.rdp-anim-day]:aria-selected:opacity-100",
+                    today: "rdp-today text-foreground [&>.rdp-anim-cell>.rdp-anim-day]:font-medium",
+                    outside:
+                        "rdp-outside [&>.rdp-anim-cell>.rdp-anim-day]:text-muted-foreground/40",
+                    disabled:
+                        "rdp-disabled [&>.rdp-anim-cell>.rdp-anim-day]:text-muted-foreground/30",
+                    range_middle:
+                        "rdp-range_middle [&>.rdp-anim-cell>.rdp-anim-day]:rounded-none [&>.rdp-anim-cell>.rdp-anim-day]:border-transparent [&>.rdp-anim-cell>.rdp-anim-day]:shadow-none [&>.rdp-anim-cell>.rdp-anim-day]:text-foreground",
+                    range_end: "rdp-range_end",
+                    range_start: "rdp-range_start",
+                    hidden: "rdp-hidden invisible",
+                    ...classNames,
+                }}
+                components={{
+                    Chevron: ({ orientation, ...rest }) => {
+                        if (orientation === "left") {
+                            return <ChevronLeft className="h-4 w-4" {...rest} />
+                        }
+                        return <ChevronRight className="h-4 w-4" {...rest} />
+                    },
+                    ...(props.components ?? {}),
+                    ...(isRangeMode ? { DayButton: AnimatedDayButton } : {}),
+                }}
+                {...props}
+            />
+        </div>
     )
 }
 Calendar.displayName = "Calendar"
