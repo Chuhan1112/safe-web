@@ -24,7 +24,7 @@ const COLOR_FADE: Transition = { delay: 0.08, duration: 0.25, ease: "easeOut" }
  * - range_start / range_end：半段 fill + 实心 knob + 弹簧描边圈
  * 位移走 spring，fill 颜色 opacity 慢 0.08s 跟随 —— preset 切换看起来像一个整体在移动。
  */
-function AnimatedDayButton({ modifiers, className, ...rest }: DayButtonProps) {
+function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProps) {
     const reduced = useReducedMotion()
     const transition = reduced ? { duration: 0 } : SPRING
 
@@ -36,7 +36,7 @@ function AnimatedDayButton({ modifiers, className, ...rest }: DayButtonProps) {
 
     return (
         <span className="rdp-anim-cell absolute inset-0 flex items-center justify-center">
-            {/* middle 整格 fill：铺满 td（td 无缝相邻，fill 天然连续） */}
+            {/* middle 整格 fill：铺满 td（td 无缝相邻，fill 天然连续）；outside 日更淡以示弱 */}
             {isMiddle && (
                 <motion.span
                     aria-hidden
@@ -44,7 +44,10 @@ function AnimatedDayButton({ modifiers, className, ...rest }: DayButtonProps) {
                     transition={reduced ? { duration: 0 } : { ...SPRING, opacity: COLOR_FADE }}
                     initial={false}
                     animate={{ opacity: 1 }}
-                    className="absolute inset-0 bg-primary/15"
+                    className={cn(
+                        "absolute inset-0 bg-primary/15 dark:bg-primary/[0.07]",
+                        day.outside && "opacity-50"
+                    )}
                 />
             )}
             {/* edge 半段 fill：start 铺右半，end 铺左半（单日时收成圆点） */}
@@ -58,7 +61,7 @@ function AnimatedDayButton({ modifiers, className, ...rest }: DayButtonProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className={cn(
-                        "absolute inset-y-0 w-1/2 bg-primary/15",
+                        "absolute inset-y-0 w-1/2 bg-primary/15 dark:bg-primary/[0.07]",
                         isStart ? "right-0 rounded-r-md" : "left-0 rounded-l-md"
                     )}
                 />
@@ -66,10 +69,9 @@ function AnimatedDayButton({ modifiers, className, ...rest }: DayButtonProps) {
             <button
                 type="button"
                 className={cn(
-                    "rdp-anim-day relative z-10 flex h-9 w-9 items-center justify-center rounded-md border border-transparent p-0 text-sm font-normal text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground aria-selected:opacity-100",
+                    "rdp-anim-day relative z-10 flex h-9 w-9 items-center justify-center rounded-full border border-transparent p-0 text-sm font-normal text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground",
                     isEdge &&
                         "bg-primary text-primary-foreground font-medium shadow-sm hover:bg-primary hover:text-primary-foreground",
-                    modifiers.selected && !isEdge && "bg-secondary/60 text-foreground font-medium",
                     className
                 )}
                 {...rest}
@@ -196,10 +198,19 @@ function Calendar({
                         "rdp-outside [&>.rdp-anim-cell>.rdp-anim-day]:text-muted-foreground/40",
                     disabled:
                         "rdp-disabled [&>.rdp-anim-cell>.rdp-anim-day]:text-muted-foreground/30",
-                    range_middle:
-                        "rdp-range_middle [&>.rdp-anim-cell>.rdp-anim-day]:rounded-none [&>.rdp-anim-cell>.rdp-anim-day]:border-transparent [&>.rdp-anim-cell>.rdp-anim-day]:shadow-none [&>.rdp-anim-cell>.rdp-anim-day]:text-foreground",
-                    range_end: "rdp-range_end",
-                    range_start: "rdp-range_start",
+                    // range 着色全权交给动画层 fill，压掉 RDP/dark 主题的 td 背景避免双重叠加
+                    ...(isRangeMode
+                        ? {
+                              range_middle:
+                                  "rdp-range_middle !bg-transparent [&>.rdp-anim-cell>.rdp-anim-day]:rounded-none [&>.rdp-anim-cell>.rdp-anim-day]:border-transparent [&>.rdp-anim-cell>.rdp-anim-day]:shadow-none [&>.rdp-anim-cell>.rdp-anim-day]:text-foreground",
+                              range_start: "rdp-range_start !bg-transparent",
+                              range_end: "rdp-range_end !bg-transparent",
+                          }
+                        : {
+                              range_middle: "rdp-range_middle",
+                              range_start: "rdp-range_start",
+                              range_end: "rdp-range_end",
+                          }),
                     hidden: "rdp-hidden invisible",
                     ...classNames,
                 }}
