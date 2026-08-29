@@ -24,7 +24,7 @@ const COLOR_FADE: Transition = { delay: 0.08, duration: 0.25, ease: "easeOut" }
  * - range_start / range_end：半段 fill + 实心 knob + 弹簧描边圈
  * 位移走 spring，fill 颜色 opacity 慢 0.08s 跟随 —— preset 切换看起来像一个整体在移动。
  */
-function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProps) {
+function AnimatedDayButton({ modifiers, className, ...rest }: DayButtonProps) {
     const reduced = useReducedMotion()
     const transition = reduced ? { duration: 0 } : SPRING
 
@@ -34,11 +34,9 @@ function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProp
     const isMiddle = !!modifiers.range_middle
     const isSingleDay = isStart && isEnd
 
-    const dir = day.outside ? (day.date.getMonth() % 2 === 0 ? "ltr" : "rtl") : "ltr"
-
     return (
-        <span className="rdp-anim-cell relative inline-flex h-9 w-9 items-center justify-center">
-            {/* middle 整格 fill */}
+        <span className="rdp-anim-cell absolute inset-0 flex items-center justify-center">
+            {/* middle 整格 fill：铺满 td（td 无缝相邻，fill 天然连续） */}
             {isMiddle && (
                 <motion.span
                     aria-hidden
@@ -46,7 +44,7 @@ function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProp
                     transition={reduced ? { duration: 0 } : { ...SPRING, opacity: COLOR_FADE }}
                     initial={false}
                     animate={{ opacity: 1 }}
-                    className="absolute inset-y-0 -left-2 -right-2 bg-primary/15"
+                    className="absolute inset-0 bg-primary/15"
                 />
             )}
             {/* edge 半段 fill：start 铺右半，end 铺左半（单日时收成圆点） */}
@@ -60,9 +58,8 @@ function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProp
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className={cn(
-                        "absolute inset-y-0 w-[calc(50%+8px)] bg-primary/15",
-                        isStart ? "right-0 rounded-r-md" : "left-0 rounded-l-md",
-                        dir
+                        "absolute inset-y-0 w-1/2 bg-primary/15",
+                        isStart ? "right-0 rounded-r-md" : "left-0 rounded-l-md"
                     )}
                 />
             )}
@@ -101,6 +98,8 @@ function Calendar({
     const selected = (props as { selected?: unknown }).selected as
         | { from?: Date; to?: Date }
         | undefined
+    // preset 点击后把显示月份带到新范围的末端，让弹簧动画可见
+    const [displayMonth, setDisplayMonth] = React.useState<Date | undefined>(undefined)
 
     const presetRow =
         isRangeMode && presets?.length ? (
@@ -131,6 +130,7 @@ function Calendar({
                                           ) => void)
                                         | undefined
                                 )?.(r, r.to, { range_start: true, range_end: true }, e)
+                                setDisplayMonth(r.to)
                             }}
                             className={cn(
                                 "h-6 rounded-md px-2 text-xs font-medium transition-colors",
@@ -151,6 +151,15 @@ function Calendar({
             {presetRow}
             <DayPicker
                 showOutsideDays={showOutsideDays}
+                month={displayMonth ?? (props as { defaultMonth?: Date }).defaultMonth}
+                onMonthChange={(m) => {
+                    setDisplayMonth(m)
+                    ;(
+                        (props as { onMonthChange?: (m: Date) => void }).onMonthChange as
+                            | ((m: Date) => void)
+                            | undefined
+                    )?.(m)
+                }}
                 className={cn("p-4 relative", presetRow && "pt-1")}
                 classNames={{
                     months: "rdp-months flex flex-col sm:flex-row space-y-4 sm:space-x-6 sm:space-y-0",
