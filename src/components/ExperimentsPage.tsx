@@ -196,7 +196,7 @@ export const ExperimentsPage = () => {
           className="rounded border bg-background px-2 py-1 text-sm"
         />
         <Select value={filterMarket} onValueChange={setFilterMarket}>
-          <SelectTrigger className="h-9 w-32 text-sm">
+          <SelectTrigger className="h-8 w-32 text-sm">
             <SelectValue placeholder="全部市场" />
           </SelectTrigger>
           <SelectContent>

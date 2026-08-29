@@ -37,7 +37,7 @@ function NavButton({ item, isActive, onClick }: { item: { id: string; icon: Reac
     <button
       onClick={onClick}
       className={cn(
-        'group relative flex h-10 w-10 md:h-10 md:w-12 items-center justify-center rounded-lg transition-colors flex-col gap-0.5',
+        'group relative flex h-9 w-9 md:h-9 md:w-12 items-center justify-center rounded-lg transition-colors flex-col gap-0.5',
         isActive
           ? 'bg-primary/10 text-primary'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -171,7 +171,7 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
 
         <button
           onClick={onThemeToggle}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           title={theme === 'light' ? '切换到 Dark 主题' : theme === 'dark' ? '切换到 Perplexity 主题' : '切换到 Light 主题'}
         >
           {theme === 'light' ? <Sun className="h-[18px] w-[18px]" /> : theme === 'dark' ? <Moon className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}

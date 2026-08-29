@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,23 +6,23 @@
 
 @layer base {
   :root {
-    --background: 210 29% 96%;
-    --foreground: 222 47% 10%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 10%;
+    --card-foreground: 0 0% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 10%;
+    --popover-foreground: 0 0% 20%;
 
-    --primary: 186 92% 36%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 207 100% 45.1%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 204 31% 92%;
     --secondary-foreground: 220 42% 14%;
 
-    --muted: 208 24% 90%;
-    --muted-foreground: 220 14% 37%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 46.7%;
 
     --accent: 24 96% 53%;
     --accent-foreground: 220 42% 14%;
@@ -30,11 +30,11 @@
     --destructive: 0 80% 56%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214 26% 84%;
-    --input: 214 26% 84%;
-    --ring: 186 92% 36%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 207 100% 45.1%;
 
-    --data-up: 142 76% 36%;
+    --data-up: 135 78% 38.6%;
     --data-down: 0 84% 60%;
     --market-cn: 0 84% 55%;
     --chart-1: 217 91% 60%;
@@ -44,7 +44,7 @@
     --chart-5: 270 70% 60%;
     --chart-6: 186 92% 36%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
   }
 
   .dark {
@@ -135,7 +135,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Geist', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -147,7 +147,7 @@
   h4,
   h5,
   h6 {
-    font-family: 'Geist', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
 

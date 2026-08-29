@@ -233,7 +233,7 @@ export function SignalsPage() {
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">策略</label>
               <Select value={strategyId} onValueChange={setStrategyId}>
-                <SelectTrigger className="h-9 w-48 text-sm">
+                <SelectTrigger className="h-8 w-48 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
