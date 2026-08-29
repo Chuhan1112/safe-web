@@ -36,7 +36,7 @@ function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProp
 
     return (
         <span className="rdp-anim-cell absolute inset-0 flex items-center justify-center">
-            {/* middle 整格 fill：铺满 td（td 无缝相邻，fill 天然连续）；outside 日更淡以示弱 */}
+            {/* middle 整格 fill：铺满 td（td 无缝相邻，fill 天然连续）；outside 日略淡以示弱 */}
             {isMiddle && (
                 <motion.span
                     aria-hidden
@@ -46,11 +46,11 @@ function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProp
                     animate={{ opacity: 1 }}
                     className={cn(
                         "absolute inset-0 bg-primary/15 dark:bg-primary/[0.07]",
-                        day.outside && "opacity-50"
+                        day.outside && "opacity-60"
                     )}
                 />
             )}
-            {/* edge 半段 fill：start 铺右半，end 铺左半（单日时收成圆点） */}
+            {/* edge 整格 fill：色带穿过整个 edge 格，圆钮坐在色带上；四角圆化避免 knob 外露方角 */}
             {isEdge && !isSingleDay && (
                 <motion.span
                     aria-hidden
@@ -61,8 +61,8 @@ function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProp
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className={cn(
-                        "absolute inset-y-0 w-1/2 bg-primary/15 dark:bg-primary/[0.07]",
-                        isStart ? "right-0 rounded-r-md" : "left-0 rounded-l-md"
+                        "absolute inset-0 rounded-md bg-primary/15 dark:bg-primary/[0.07]",
+                        day.outside && "opacity-60"
                     )}
                 />
             )}
