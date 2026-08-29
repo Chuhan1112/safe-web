@@ -72,6 +72,11 @@ function AnimatedDayButton({ day, modifiers, className, ...rest }: DayButtonProp
                     "rdp-anim-day relative z-10 flex h-9 w-9 items-center justify-center rounded-full border border-transparent p-0 text-sm font-normal text-foreground/80 transition-colors hover:bg-secondary hover:text-foreground",
                     isEdge &&
                         "bg-primary text-primary-foreground font-medium shadow-sm hover:bg-primary hover:text-primary-foreground",
+                    // outside 但在 range 内（跨月选中日）：文字不随 outside 置灰——fill 已覆盖，置灰与 fill 矛盾
+                    // （!important 压过 outside classNames 的后代选择器置灰规则）
+                    day.outside && !isEdge && modifiers.selected
+                        ? "!text-foreground/60"
+                        : "",
                     className
                 )}
                 {...rest}
@@ -192,8 +197,9 @@ function Calendar({
                     day: "rdp-day text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
                     day_button: "",
                     selected:
-                        "rdp-selected [&>.rdp-anim-cell>.rdp-anim-day]:aria-selected:opacity-100",
+                        "rdp-selected [&>.rdp-anim-cell>.rdp-anim-day]:aria-selected:opacity-100 [&>.rdp-anim-cell>.rdp-anim-day]:text-foreground",
                     today: "rdp-today text-foreground [&>.rdp-anim-cell>.rdp-anim-day]:font-medium",
+                    // outside 但 selected（range 内跨月日）的文字由 AnimatedDayButton 处理——fill 已覆盖，置灰与 fill 矛盾
                     outside:
                         "rdp-outside [&>.rdp-anim-cell>.rdp-anim-day]:text-muted-foreground/40",
                     disabled:
