@@ -10,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { Activity, TrendingUp, Target, BarChart3, Zap } from 'lucide-react'
 
-const QUICK_CHIPS = ['NVDA', 'AAPL', 'MSFT', '600519.SS'] as const
+const QUICK_CHIPS_US = ['NVDA', 'AAPL', 'MSFT'] as const
+const QUICK_CHIPS_CN = ['600519.SS', '000001.SZ', '600036.SS'] as const
 
 function formatPct(value: number): string {
   return `${(value * 100).toFixed(1)}%`
@@ -111,7 +112,8 @@ export function TechAnalysisPage() {
               </Button>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {QUICK_CHIPS.map((chip) => (
+              {/* 快捷标的按市场过滤：US 下点 A 股代码（反之亦然）必 404 */}
+              {(market === 'CN' ? QUICK_CHIPS_CN : QUICK_CHIPS_US).map((chip) => (
                 <Badge
                   key={chip}
                   variant="secondary"

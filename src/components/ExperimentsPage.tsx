@@ -51,12 +51,15 @@ export const ExperimentsPage = () => {
     trade_logs: unknown[]
   }>>({})
 
+  // 切全局市场：跟随过滤 + 清空旧列表/选中/重跑结果，避免跨市场脏数据。
+  // 注意后端 list_experiments 在 market 缺省时仍回落默认市场过滤，没有真正的"全部"语义，
+  // 因此 filterMarket 恒为具体市场（US/CN），不保留空值。
   useEffect(() => {
-    // 默认跟随全局市场；用户已手动选择(非空)则保留其选择
-    if (!filterMarket) {
-      setFilterMarket(globalMarket)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setFilterMarket(globalMarket)
+    setExperiments([])
+    setSelectedIds(new Set())
+    setRerunResults({})
+    setEditingId(null)
   }, [globalMarket])
 
   const fetchExperiments = useCallback(async (signal?: AbortSignal) => {
@@ -197,10 +200,9 @@ export const ExperimentsPage = () => {
         />
         <Select value={filterMarket} onValueChange={setFilterMarket}>
           <SelectTrigger className="h-8 w-32 text-sm">
-            <SelectValue placeholder="全部市场" />
+            <SelectValue placeholder="市场" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">全部市场</SelectItem>
             <SelectItem value="US">美股</SelectItem>
             <SelectItem value="CN">A股</SelectItem>
           </SelectContent>

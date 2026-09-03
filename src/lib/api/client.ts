@@ -224,6 +224,12 @@ export interface SyncTaskStatus {
     data?: any;
     progress?: number;
     total?: number;
+    /** 实时阶段：downloading=下载中, rate_limited=限流等待中, idle=空闲 */
+    phase?: string;
+    /** 阶段详情（如 "腾讯限流窗口，等待 ~72s 后继续"） */
+    phase_detail?: string;
+    /** 本次同步开始时间 ISO */
+    started_at?: string;
 }
 
 export interface FullSyncStatus {

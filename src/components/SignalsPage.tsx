@@ -114,10 +114,17 @@ export function SignalsPage() {
     } finally { setRankingLoading(false) }
   }, [market])
 
-  // 切市场时清空旧信号结果 + 当前策略不在新市场列表时重置
+  // 切市场时清空旧信号结果/动量排名/脉冲（旧市场数据不可留）
   useEffect(() => {
     setSignalsData(null)
     setError(null)
+    setRankingData(null)
+    setRankingError(null)
+    setPulseData(null)
+  }, [market])
+
+  // 当前策略不在新市场列表时重置
+  useEffect(() => {
     const strategies = ALL_STRATEGIES[market] || ALL_STRATEGIES.US
     if (!strategies.includes(strategyId)) {
       setStrategyId(strategies[0])

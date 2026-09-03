@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -9,6 +9,17 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       return initialValue
     }
   })
+
+  // key 变化时重读，否则动态 key（如按市场分桶）切 key 后读侧仍是旧值。
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(key)
+      setStoredValue(item !== null ? (JSON.parse(item) as T) : initialValue)
+    } catch {
+      setStoredValue(initialValue)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
 
   const setValue = useCallback(
     (value: T | ((prev: T) => T)) => {

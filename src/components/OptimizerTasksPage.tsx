@@ -31,8 +31,10 @@ export function OptimizerTasksPage() {
     }
   }, [market])
 
-  // Initial fetch
+  // Initial fetch（切市场先清空旧列表，避免旧市场任务闪现）
   useEffect(() => {
+    setTasks([])
+    setError(null)
     setLoading(true)
     fetchTasks()
   }, [fetchTasks])

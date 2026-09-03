@@ -120,9 +120,11 @@ export const DataHealthPage = memo(function DataHealthPage() {
     }
   }, [market, cachedFetch])
 
-  // 切市场时清空旧选中（可能属于不同市场）
+  // 切市场时清空旧数据（选中 + 汇总 + 列表），避免旧市场数字闪现
   useEffect(() => {
     setSelectedTicker(null)
+    setSummary(null)
+    setTickers([])
   }, [market])
 
   useEffect(() => {

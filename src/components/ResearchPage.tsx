@@ -16,11 +16,17 @@ export function ResearchPage() {
   const [apiAvailable, setApiAvailable] = useState(false)
 
   useEffect(() => {
+    // 切市场先清空旧报告/选中/搜索，否则 0 报告的市场会静默展示旧市场列表。
+    // set-state-in-effect 豁免：依赖仅 [market]，无回写循环风险。
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReports([])
+    setSelectedId('')
+    setSearch('')
     const controller = new AbortController()
     api.get<{ reports: ResearchReport[] }>('/research', { market }, controller.signal)
       .then((data) => {
+        setReports(data.reports ?? [])
         if (data.reports?.length > 0) {
-          setReports(data.reports)
           setApiAvailable(true)
         }
       })
