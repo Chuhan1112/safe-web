@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { differenceInCalendarDays } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { AssetChart } from "@/components/AssetChart"
 import { Loader2, ExternalLink } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 import { useMarketColors } from "@/hooks/useMarketColors"
+import { useMarketScope } from "@/hooks/useMarketScope"
 
 interface TickerChartBar {
   time: string
@@ -65,26 +66,25 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
     return Math.max(30, days)
   }, [dateRange])
 
-  const loadSeqRef = useRef(0)
+  const scope = useMarketScope(market ?? 'US')
 
   const loadData = useCallback(async (symbol: string) => {
     if (!fetchData) return
-    const seq = loadSeqRef.current + 1
-    loadSeqRef.current = seq
+    const gen = scope.claim()
     setLoading(true)
     setError(null)
     setData(null)
     try {
       const res = await fetchData(symbol, lookback, market)
-      if (seq !== loadSeqRef.current) return
+      if (!scope.alive(gen)) return
       setData(res)
     } catch (err: unknown) {
-      if (seq !== loadSeqRef.current) return
+      if (!scope.alive(gen)) return
       setError(err instanceof Error ? err.message : String(err))
     } finally {
-      if (seq === loadSeqRef.current) setLoading(false)
+      if (scope.alive(gen)) setLoading(false)
     }
-  }, [lookback, fetchData, market])
+  }, [lookback, fetchData, market, scope])
 
   useEffect(() => {
     if (open && ticker) {

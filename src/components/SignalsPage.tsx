@@ -10,6 +10,7 @@ import { TableSkeleton } from '@/components/skeletons/TableSkeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SignalExplanationDrawer } from '@/components/SignalExplanationDrawer'
 import { useMarket } from '@/contexts/MarketContext'
+import { useMarketScope } from '@/hooks/useMarketScope'
 import { usePageVisible } from '@/hooks/usePageVisible'
 import { useMarketColors } from '@/hooks/useMarketColors'
 import { usePolling } from '@/hooks/usePolling'
@@ -81,6 +82,7 @@ function actionBadgeVariant(action: string) {
 
 export function SignalsPage() {
   const { market } = useMarket()
+  const scope = useMarketScope(market)
   const { upClass, downClass } = useMarketColors()
   const [strategyId, setStrategyId] = useState('ADAPTIVE_MOMENTUM')
   const [loading, setLoading] = useState(false)
@@ -100,19 +102,22 @@ export function SignalsPage() {
   const pageVisible = usePageVisible()
 
   const fetchRanking = useCallback(async () => {
+    const gen = scope.claim()
     setRankingLoading(true)
     setRankingError(null)
     try {
       const data = await api.get<{
         date: string
         rankings: { rank: number; ticker: string; price: number | null; momentum: number | null; above_sma: boolean | null }[]
-      }>('/signals/momentum-ranking', { market, top_n: 20 })
+      }>('/signals/momentum-ranking', { market, top_n: 20 }, scope.getSignal())
+      if (!scope.alive(gen)) return
       setRankingData(data)
     } catch {
+      if (!scope.alive(gen)) return
       setRankingData(null)
       setRankingError('动量排名加载失败，请稍后重试')
-    } finally { setRankingLoading(false) }
-  }, [market])
+    } finally { if (scope.alive(gen)) setRankingLoading(false) }
+  }, [market, scope])
 
   // 切市场时清空旧信号结果/动量排名/脉冲（旧市场数据不可留）
   useEffect(() => {
@@ -149,15 +154,17 @@ export function SignalsPage() {
 
   const fetchPulse = useCallback(async () => {
     if (!signalsData || !signalsData.signals || signalsData.signals.length === 0) return
+    const gen = scope.claim()
     const symbols = signalsData.signals.map((s) => s.ticker)
     try {
       const data = await api.get<PulseData>('/signals/live/pulse', {
         symbols: symbols.join(','),
         market,
-      })
+      }, scope.getSignal())
+      if (!scope.alive(gen)) return
       setPulseData(data)
     } catch { /* pulse 静默失败 */ }
-  }, [signalsData, market])
+  }, [signalsData, market, scope])
 
   // pulse 轮询: 每 45s 刷新一次盘中价格（页面 hidden 时自动暂停）
   const pulseEnabled = !!(signalsData && signalsData.metadata?.has_live_quotes)
@@ -181,6 +188,7 @@ export function SignalsPage() {
   usePolling(fetchPulse, 45000, pulseEnabled)
 
   const fetchSignals = useCallback(async () => {
+    const gen = scope.claim()
     setLoading(true)
     setError(null)
     try {
@@ -189,13 +197,15 @@ export function SignalsPage() {
         market,
         force_sync: true,
       })
+      if (!scope.alive(gen)) return
       setSignalsData(data)
     } catch (e: unknown) {
+      if (!scope.alive(gen)) return
       setError(e instanceof Error ? e.message : String(e))
     } finally {
-      setLoading(false)
+      if (scope.alive(gen)) setLoading(false)
     }
-  }, [strategyId, market])
+  }, [strategyId, market, scope])
 
   const handleExplain = useCallback(async (signal: SignalItem) => {
     if (signal.explanation) {
@@ -208,6 +218,7 @@ export function SignalsPage() {
     setSelectedSignal({ ...signal, explanation: undefined })
     setDrawerOpen(true)
 
+    const gen = scope.claim()
     try {
       const params = { strategy_id: strategyId, market }
       const explanation = await api.get<{
@@ -219,14 +230,16 @@ export function SignalsPage() {
         failed_conditions: { name: string; label: string; passed: boolean }[]
         factor_contributions: { name: string; label: string; score: number; weight: number }[]
         risk_notes: string[]
-      }>(`/signals/explain/${signal.ticker}`, params)
+      }>(`/signals/explain/${signal.ticker}`, params, scope.getSignal())
+      if (!scope.alive(gen)) return
       setSelectedSignal({ ...signal, explanation: { ...explanation, ticker: signal.ticker, action: signal.action } })
     } catch {
+      if (!scope.alive(gen)) return
       setSelectedSignal({ ...signal, explanation: undefined })
     } finally {
-      setDrawerLoading(false)
+      if (scope.alive(gen)) setDrawerLoading(false)
     }
-  }, [strategyId, market])
+  }, [strategyId, market, scope])
 
   return (
     <PageContainer className="space-y-4">

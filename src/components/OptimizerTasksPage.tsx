@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { RefreshCw } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
+import { useMarketScope } from '@/hooks/useMarketScope'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api/client'
 
@@ -15,21 +16,26 @@ function hasRunningTasks(tasks: OptimizerTask[]): boolean {
 
 export function OptimizerTasksPage() {
   const { market } = useMarket()
+  const scope = useMarketScope(market)
   const [tasks, setTasks] = useState<OptimizerTask[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async () => {
+    const gen = scope.claim()
     try {
-      const data = await api.get<OptimizerTask[]>('/backtest/optimize/tasks', { market })
+      const data = await api.get<OptimizerTask[]>('/backtest/optimize/tasks', { market }, scope.getSignal())
+      if (!scope.alive(gen)) return
       setTasks(data)
       setError(null)
     } catch (e: unknown) {
+      if ((e as Error)?.name === 'AbortError') return
+      if (!scope.alive(gen)) return
       setError(e instanceof Error ? e.message : 'Failed to fetch tasks')
     } finally {
-      setLoading(false)
+      if (scope.alive(gen)) setLoading(false)
     }
-  }, [market])
+  }, [market, scope])
 
   // Initial fetch（切市场先清空旧列表，避免旧市场任务闪现）
   useEffect(() => {

@@ -8,6 +8,7 @@ import { Loader2, Database, Zap, CircleDot, AlertCircle, RefreshCw, Timer } from
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useMarket } from '@/contexts/MarketContext';
+import { useMarketScope } from '@/hooks/useMarketScope';
 import { usePolling } from '@/hooks/usePolling';
 
 /** 已耗时秒数（每秒跳动；startedAt 缺失返回 null） */
@@ -37,7 +38,6 @@ export interface DataManagementStrings {
   grab_data: string; market_sync_desc: string;
   grab_option_data: string; options_sync_desc: string;
   grab_intraday_data: string; intraday_sync_desc: string;
-  [key: string]: string;
 }
 
 interface DataManagementProps {
@@ -46,32 +46,35 @@ interface DataManagementProps {
 
 export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
   const { market } = useMarket();
+  const scope = useMarketScope(market);
   const [status, setStatus] = useState<FullSyncStatus | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [syncError, setSyncError] = useState<string | null>(null);
   // 跟踪上次 market sync 状态，检测 running → completed/error 转换。
-  // 后端 /admin/sync/status 是全局任务：ref 同时记录观察时的市场，
-  // 完成事件只在同市场 running→落定时才派发，避免 US 的完成被算到 CN 头上。
-  const prevMarketStatusRef = useRef<{ status: string | undefined; market: string }>({ status: undefined, market });
+  // 后端 /admin/sync/status 是全局任务：跨市场写回由 scope.alive 拦截，
+  // 这里只需记前一个状态（同市场语义由 scope 保证）。
+  const prevStatusRef = useRef<string | undefined>(undefined);
 
   const fetchStatus = useCallback(async () => {
+    const gen = scope.claim()
     try {
       const data = await api.getSyncStatus();
+      if (!scope.alive(gen)) return
       setStatus(data);
       // 检测 market sync 完成：running → completed/error
       const cur = data?.market?.status;
-      const prev = prevMarketStatusRef.current;
-      if (prev.status === 'running' && prev.market === market && (cur === 'completed' || cur === 'error')) {
+      const prev = prevStatusRef.current;
+      if (prev === 'running' && (cur === 'completed' || cur === 'error')) {
         // 通知数据健康中心失效缓存并 refetch（sync 后统计已变）
         window.dispatchEvent(new CustomEvent('data:sync-complete', { detail: { market } }));
       }
-      prevMarketStatusRef.current = { status: cur, market };
+      prevStatusRef.current = cur;
     } catch (error) {
       console.error('Failed to fetch sync status', error);
     } finally {
       // Done fetching
     }
-  }, [market]);
+  }, [market, scope]);
 
   // 每 5s 轮询同步状态（页面 hidden 时暂停）—— 首次立即拉取
   useEffect(() => { fetchStatus() }, [fetchStatus])

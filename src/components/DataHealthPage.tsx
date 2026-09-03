@@ -6,6 +6,7 @@ import { DataHealthTable } from '@/components/DataHealthTable'
 import type { ViewMode } from '@/utils/dataHealth'
 import { DataHealthDetailDrawer } from '@/components/DataHealthDetailDrawer'
 import { useMarket } from '@/contexts/MarketContext'
+import { useMarketScope } from '@/hooks/useMarketScope'
 import { requestCache } from '@/utils/requestCache'
 import { deduplicateRequest } from '@/utils/deduplicateRequest'
 import { api } from '@/lib/api/client'
@@ -65,6 +66,7 @@ const SUMMARY_CARDS: { key: keyof HealthSummary; label: string; color: string }[
 
 export const DataHealthPage = memo(function DataHealthPage() {
   const { market } = useMarket()
+  const scope = useMarketScope(market)
   const [summary, setSummary] = useState<HealthSummary | null>(null)
   const [tickers, setTickers] = useState<TickerHealthRow[]>([])
   const [statusFilter, setStatusFilter] = useState('')
@@ -80,11 +82,12 @@ export const DataHealthPage = memo(function DataHealthPage() {
       params: Record<string, unknown> | undefined,
       cacheKey: string,
       ttlMs = 60_000,
+      signal?: AbortSignal,
     ): Promise<T> => {
       const cached = requestCache.get<T>(cacheKey)
       if (cached) return cached as T
       return deduplicateRequest(cacheKey, async () => {
-        const data = await api.get<T>(url, params)
+        const data = await api.get<T>(url, params, signal)
         requestCache.set(cacheKey, data, ttlMs)
         return data as T
       })
@@ -95,6 +98,7 @@ export const DataHealthPage = memo(function DataHealthPage() {
   // ── 数据获取 ──────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
+    const gen = scope.claim()
     setLoading(true)
     try {
       const [summaryData, tickersData] = await Promise.all([
@@ -103,22 +107,26 @@ export const DataHealthPage = memo(function DataHealthPage() {
           { market },
           `health-summary-${market}`,
           60_000,
+          scope.getSignal(),
         ),
         cachedFetch<TickerHealthRow[]>(
           '/data/health/tickers',
           { market },
           `health-tickers-${market}`,
           60_000,
+          scope.getSignal(),
         ),
       ])
+      if (!scope.alive(gen)) return
       setSummary(summaryData)
       setTickers(tickersData)
     } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return
       console.error('获取数据健康信息失败:', err)
     } finally {
-      setLoading(false)
+      if (scope.alive(gen)) setLoading(false)
     }
-  }, [market, cachedFetch])
+  }, [market, cachedFetch, scope])
 
   // 切市场时清空旧数据（选中 + 汇总 + 列表），避免旧市场数字闪现
   useEffect(() => {
