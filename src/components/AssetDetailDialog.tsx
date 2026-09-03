@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { differenceInCalendarDays } from "date-fns"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { AssetChart } from "@/components/AssetChart"
@@ -65,17 +65,24 @@ export function AssetDetailDialog({ ticker, open, onOpenChange, dateRange, fetch
     return Math.max(30, days)
   }, [dateRange])
 
+  const loadSeqRef = useRef(0)
+
   const loadData = useCallback(async (symbol: string) => {
     if (!fetchData) return
+    const seq = loadSeqRef.current + 1
+    loadSeqRef.current = seq
     setLoading(true)
     setError(null)
+    setData(null)
     try {
       const res = await fetchData(symbol, lookback, market)
+      if (seq !== loadSeqRef.current) return
       setData(res)
     } catch (err: unknown) {
+      if (seq !== loadSeqRef.current) return
       setError(err instanceof Error ? err.message : String(err))
     } finally {
-      setLoading(false)
+      if (seq === loadSeqRef.current) setLoading(false)
     }
   }, [lookback, fetchData, market])
 

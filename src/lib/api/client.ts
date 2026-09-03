@@ -268,6 +268,7 @@ export interface OptimizationHistoryRecord {
     results: any[];
     timestamp: string;
     name: string;
+    market?: string;
 }
 
 export interface SignalItem {
@@ -610,8 +611,11 @@ export const api = {
         return response.json();
     },
 
-    async getOptimizationHistory(): Promise<OptimizationHistoryRecord[]> {
-        const response = await fetch(`${API_BASE}/backtest/optimize/history`);
+    async getOptimizationHistory(market?: string): Promise<OptimizationHistoryRecord[]> {
+        const params = new URLSearchParams();
+        if (market) params.set('market', market);
+        const qs = params.toString();
+        const response = await fetch(`${API_BASE}/backtest/optimize/history${qs ? `?${qs}` : ''}`);
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
             throw new Error(error.detail || 'Failed to fetch history');

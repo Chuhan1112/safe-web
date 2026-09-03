@@ -22,6 +22,7 @@ export function ResearchPage() {
     setReports([])
     setSelectedId('')
     setSearch('')
+    setApiAvailable(false)
     const controller = new AbortController()
     api.get<{ reports: ResearchReport[] }>('/research', { market }, controller.signal)
       .then((data) => {
