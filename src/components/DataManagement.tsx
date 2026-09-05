@@ -28,6 +28,8 @@ function useElapsedSeconds(startedAt?: string): number | null {
 const PHASE_LABELS: Record<string, string> = {
   downloading: '下载中',
   rate_limited: '限流等待',
+  validating: '校验中',
+  writing: '写入中',
 };
 
 /** 文案经 props 注入（提取原则：公共区不得依赖 @/private），调用方传 translations[lang] */
