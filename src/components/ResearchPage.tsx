@@ -61,7 +61,7 @@ export function ResearchPage() {
               placeholder="搜索代码或名称..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full rounded-md border border-border bg-muted/50 py-1.5 pl-8 pr-3 text-xs outline-none focus:border-primary/50 focus:bg-muted"
+              className="w-full rounded-md border border-border bg-muted/50 py-1.5 pl-8 pr-3 text-xs outline-none transition-colors focus:border-primary/50 focus:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40"
             />
           </div>
         </div>

@@ -218,7 +218,7 @@ export interface ScreenerStatus {
 }
 
 export interface SyncTaskStatus {
-    status: 'idle' | 'running' | 'completed' | 'error';
+    status: 'idle' | 'running' | 'completed' | 'error' | 'DEGRADED';
     last_run?: string;
     error?: string;
     data?: any;
@@ -230,6 +230,12 @@ export interface SyncTaskStatus {
     phase_detail?: string;
     /** 本次同步开始时间 ISO */
     started_at?: string;
+    /** 后端降级标记：部分成功时 status=DEGRADED 且 degraded=true */
+    degraded?: boolean;
+    /** 降级原因码 */
+    reason_code?: string | null;
+    /** 增量是否已重载（仅展示，不触发 reload API） */
+    should_reload?: boolean;
 }
 
 export interface FullSyncStatus {

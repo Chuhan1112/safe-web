@@ -86,11 +86,15 @@ export const DataHealthPage = memo(function DataHealthPage() {
     ): Promise<T> => {
       const cached = requestCache.get<T>(cacheKey)
       if (cached) return cached as T
-      return deduplicateRequest(cacheKey, async () => {
-        const data = await api.get<T>(url, params, signal)
-        requestCache.set(cacheKey, data, ttlMs)
-        return data as T
-      })
+      return deduplicateRequest(
+        cacheKey,
+        async () => {
+          const data = await api.get<T>(url, params, signal)
+          requestCache.set(cacheKey, data, ttlMs)
+          return data as T
+        },
+        signal,
+      )
     },
     [],
   )

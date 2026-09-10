@@ -37,6 +37,15 @@ function App() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
+  // 私有工作区的主题按钮也由这里统一处理，避免两个 App 互相覆盖 <html> 类名。
+  useEffect(() => {
+    const handleThemeToggle = () => {
+      setTheme((v) => (v === 'light' ? 'dark' : v === 'dark' ? 'perplexity' : 'light'))
+    }
+    window.addEventListener('cortex:theme-toggle', handleThemeToggle)
+    return () => window.removeEventListener('cortex:theme-toggle', handleThemeToggle)
+  }, [])
+
   useEffect(() => {
     if (typeof document === 'undefined') return
     const syncTheme = () => {

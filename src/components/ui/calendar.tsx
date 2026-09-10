@@ -116,7 +116,9 @@ function Calendar({
                 className="mb-2 flex items-center gap-1.5 px-1"
             >
                 {presets.map((p) => {
-                    const r = p.getRange(new Date())
+                    // Presets follow the current range start when it exists, so
+                    // they stay meaningful for historical backtests and tests.
+                    const r = p.getRange(selected?.from ?? new Date())
                     const active =
                         !!selected?.from &&
                         !!selected?.to &&

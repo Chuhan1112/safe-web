@@ -119,6 +119,10 @@ export function SignalsPage() {
     } finally { if (scope.alive(gen)) setRankingLoading(false) }
   }, [market, scope])
 
+  useEffect(() => {
+    fetchRanking()
+  }, [fetchRanking])
+
   // 切市场时清空旧信号结果/动量排名/脉冲（旧市场数据不可留）
   useEffect(() => {
     setSignalsData(null)

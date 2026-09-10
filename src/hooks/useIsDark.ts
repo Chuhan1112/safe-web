@@ -41,3 +41,32 @@ export function useIsDark(theme?: Theme): boolean {
 
   return theme !== undefined ? theme !== 'light' : observedIsDark
 }
+
+/**
+ * Reactively reads the actual three-state theme from <html>.
+ * Private overlay UI needs this to distinguish dark from perplexity.
+ */
+export function useTheme(): Theme {
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof document === 'undefined') return 'dark'
+    const cls = document.documentElement.classList
+    if (cls.contains('light')) return 'light'
+    if (cls.contains('perplexity')) return 'perplexity'
+    return 'dark'
+  })
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const sync = () => {
+      const cls = document.documentElement.classList
+      setTheme(cls.contains('light') ? 'light' : cls.contains('perplexity') ? 'perplexity' : 'dark')
+    }
+    const observer = new MutationObserver(sync)
+    observer.observe(document.documentElement, { attributeFilter: ['class'] })
+    sync()
+    return () => observer.disconnect()
+  }, [])
+
+  return theme
+}

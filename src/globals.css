@@ -141,6 +141,15 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Theme changes should feel like one coordinated fade, not scattered jumps. */
+  @media (prefers-reduced-motion: no-preference) {
+    :where(body, .trading-shell, .trading-shell *) {
+      transition-property: background-color, border-color, color, fill, stroke;
+      transition-duration: 180ms;
+      transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+  }
+
   h1,
   h2,
   h3,
@@ -318,4 +327,3 @@
     transform: translateY(0);
   }
 }
-
