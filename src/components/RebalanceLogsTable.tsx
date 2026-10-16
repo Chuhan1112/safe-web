@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, Fragment } from 'react'
+import { memo, useMemo, useState, useCallback, Fragment } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TickerLink } from '@/components/TickerLink'
 import { cn, formatPrice } from '@/lib/utils'
@@ -47,7 +47,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
     })
   }, [])
 
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = useMemo(() => logs.filter((log) => {
     if (!logFilter) return true
     const needle = logFilter.toLowerCase()
     return (
@@ -56,7 +56,27 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
       (log.Selected || []).join(',').toLowerCase().includes(needle) ||
       Object.values(log.Names || {}).join(',').toLowerCase().includes(needle)
     )
-  }).sort((a, b) => String(b.Date || '').localeCompare(String(a.Date || '')))
+  }).sort((a, b) => String(b.Date || '').localeCompare(String(a.Date || ''))), [logs, logFilter])
+
+  // 每行"买入/持有/卖出"的拆分原本写在 JSX 的 IIFE 里，于是每次展开/高亮/父级重渲染
+  // 都要把全部行重新 filter+sort 一遍。改为按 filteredLogs 记忆化。
+  const derivedByDate = useMemo(() => {
+    const map = new Map<string, {
+      buys: string[]; holds: string[]; exitedTickers: string[]; names: Record<string, string>
+    }>()
+    for (const log of filteredLogs) {
+      const dateStr = log.Date as string
+      const selected = (log.Selected || []).filter(Boolean)
+      const prevHoldings = (log.PrevHoldings || []).filter(Boolean)
+      map.set(dateStr, {
+        buys: selected.filter((tk) => !prevHoldings.includes(tk)).sort(),
+        holds: selected.filter((tk) => prevHoldings.includes(tk)).sort(),
+        exitedTickers: (log.Exited || []).filter(Boolean).sort(),
+        names: log.Names || {},
+      })
+    }
+    return map
+  }, [filteredLogs])
 
   return (
     <div className="overflow-x-auto">
@@ -96,12 +116,7 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                 </TableCell>
                 <TableCell className="py-3">
                   {(() => {
-                    const selected = (log.Selected || []).filter(Boolean)
-                    const prevHoldings = (log.PrevHoldings || []).filter(Boolean)
-                    const buys = selected.filter((t: string) => !prevHoldings.includes(t)).sort()
-                    const holds = selected.filter((t: string) => prevHoldings.includes(t)).sort()
-                    const exitedTickers = (log.Exited || []).filter(Boolean).sort()
-                    const names = log.Names || {}
+                    const { buys, holds, exitedTickers, names } = derivedByDate.get(dateStr)!
                     return (
                       <div className="flex flex-col gap-3">
                         {buys.length > 0 && (

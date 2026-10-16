@@ -67,6 +67,9 @@ export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
   const [status, setStatus] = useState<FullSyncStatus | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [syncError, setSyncError] = useState<string | null>(null);
+  // 手动触发同步后，先自己把轮询打开，直到观测到完成态（避免"POST 回来 →
+  // actionLoading 结束 → 状态还没轮到 running"导致轮询被关掉、进度不再刷新）
+  const [pollBoost, setPollBoost] = useState(false);
   // 跟踪上次 market sync 状态，检测 running → completed/error 转换。
   // 后端 /admin/sync/status 是全局任务：跨市场写回由 scope.alive 拦截，
   // 这里只需记前一个状态（同市场语义由 scope 保证）。
@@ -100,6 +103,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
       if (prev === 'running' && (cur === 'completed' || cur === 'error' || cur === 'DEGRADED' || curDegraded)) {
         // 通知数据健康中心失效缓存并 refetch（sync 后统计已变）
         window.dispatchEvent(new CustomEvent('data:sync-complete', { detail: { market } }));
+        setPollBoost(false);
       }
       prevStatusRef.current = cur;
     } catch (error) {
@@ -109,12 +113,18 @@ export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
     }
   }, [market, scope]);
 
-  // 每 5s 轮询同步状态（页面 hidden 时暂停）—— 首次立即拉取
+  // 轮询只在"确实有任务在跑"时进行：视图常驻（CSS hidden 不 unmount），
+  // 无条件 5s 轮询会让后台视图一直发请求、并在每次响应后重渲染整棵隐藏子树。
+  // pollBoost 兜住"点了同步但状态还没变成 running"的窗口期。
+  const anyTaskRunning =
+    marketTask.status === 'running' || optionsTask.status === 'running' || intradayTask.status === 'running'
+  const anyActionLoading = Object.values(actionLoading).some(Boolean)
   useEffect(() => { fetchStatus() }, [fetchStatus])
-  usePolling(fetchStatus, 5000)
+  usePolling(fetchStatus, 5000, pollBoost || anyTaskRunning || anyActionLoading)
 
   const handleSync = async (type: 'market' | 'options' | 'intraday') => {
     setSyncError(null);
+    setPollBoost(true);
     setActionLoading(prev => ({ ...prev, [type]: true }));
     try {
       if (type === 'market') await api.runMarketSync(market);
@@ -154,7 +164,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
     }
     const statusMap = {
       idle: { label: t.idle, className: "bg-secondary text-secondary-foreground" },
-      running: { label: t.running, className: "bg-primary/20 text-primary animate-pulse" },
+      running: { label: t.running, className: "bg-primary/20 text-primary animate-pulse will-change-[opacity]" },
       completed: { label: t.completed, className: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" },
       error: { label: t.error, className: "bg-red-500/10 text-red-500 border-red-500/20" }
     };

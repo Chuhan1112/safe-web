@@ -378,7 +378,7 @@ export function SignalsPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className={`absolute inline-flex h-full w-full rounded-full bg-data-up/60 ${pageVisible ? 'animate-pulse' : 'opacity-0'}`} />
+                  <span className={`absolute inline-flex h-full w-full rounded-full bg-data-up/60 ${pageVisible ? 'animate-pulse will-change-[opacity]' : 'opacity-0'}`} />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-data-up" />
                 </span>
                 盘中实时 {pulseData.market_open ? '● 交易中' : '○ 盘后'}

@@ -6,18 +6,31 @@ interface AnimatedNumberProps {
   format?: (val: number) => string
 }
 
+/** 监听器返回 true 表示"我还在动"，返回 false 表示已收敛。 */
+type FrameListener = () => boolean
+
 let sharedRafId: number | null = null
-const sharedListeners = new Set<() => void>()
+const sharedListeners = new Set<FrameListener>()
 
 function runSharedRaf() {
   const loop = () => {
-    sharedListeners.forEach(fn => fn())
-    sharedRafId = requestAnimationFrame(loop)
+    let stillAnimating = false
+    sharedListeners.forEach((fn) => {
+      if (fn()) stillAnimating = true
+    })
+    if (stillAnimating) {
+      sharedRafId = requestAnimationFrame(loop)
+    } else {
+      // 全部收敛 → 停表。之前这里无条件续帧，只要还有一个 <AnimatedNumber>
+      // 挂在树上，就永远以 60 Hz 空转（实测：空闲期 ~120 帧/4s，零 DOM 变更、
+      // 零可见效果），白烧主线程与电量。
+      sharedRafId = null
+    }
   }
   sharedRafId = requestAnimationFrame(loop)
 }
 
-function subscribeShared(fn: () => void): () => void {
+function subscribeShared(fn: FrameListener): () => void {
   sharedListeners.add(fn)
   if (sharedRafId === null) runSharedRaf()
   return () => {
@@ -64,7 +77,7 @@ export function AnimatedNumber({
     const reduced = typeof window !== 'undefined'
       && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-    const animate = () => {
+    const animate = (): boolean => {
       if (!startTime.current) startTime.current = performance.now()
       const progress = performance.now() - startTime.current
       const progressRatio = reduced ? 1 : Math.min(progress / duration, 1)
@@ -77,6 +90,8 @@ export function AnimatedNumber({
 
       displayValueRef.current = nextValue
       setDisplayValue(nextValue)
+      // 已落到目标值 → 通知共享循环停表（值再次变化时 effect 重跑会重新订阅）
+      return progressRatio < 1
     }
 
     const unsub = subscribeShared(animate)
