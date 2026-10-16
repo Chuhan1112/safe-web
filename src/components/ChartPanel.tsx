@@ -1,8 +1,12 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { buildTradeMap, buildRebalanceMap, parseDateToTs } from '@/utils/chartHoverLogic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BacktestChart } from '@/components/BacktestChart';
+// lightweight-charts(52.7 kB gzip) 只在真正要画图时才需要：懒加载后，
+// 私有 overlay 首屏（还没跑回测/没数据时）不再下载图表库。
+const BacktestChart = lazy(() =>
+  import('@/components/BacktestChart').then((m) => ({ default: m.BacktestChart })),
+)
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { ChartSkeleton } from '@/components/skeletons/ChartSkeleton';
 import { cn, formatPrice } from "@/lib/utils";
@@ -104,6 +108,22 @@ export const ChartPanel = React.memo(({
       rafRef.current = null;
     });
   }, []);
+  // 视口门控：本组件可能挂在 CSS hidden 的视图里（双视图常驻架构）。
+  // 不可见时不挂载懒加载图表，等第一次进入视口再挂（之后保持挂载，状态不丢）。
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  const ioSupported = typeof IntersectionObserver !== 'undefined';
+  useEffect(() => {
+    if (!ioSupported || hasBeenVisible) return;
+    const el = panelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => { if (entries.some((e) => e.isIntersecting)) setHasBeenVisible(true); },
+      { rootMargin: '80px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ioSupported, hasBeenVisible]);
   const currencySymbol = market === 'CN' ? '¥' : '$'
 
   const tradeMemo = useMemo(
@@ -240,7 +260,8 @@ export const ChartPanel = React.memo(({
   }, [result, compareMode, chartView, setHoveredTime]);
 
   return (
-    <Card className="border-border bg-card/50 overflow-hidden min-h-[400px] shadow-sm flex flex-col">
+    <Card
+      ref={panelRef} className="border-border bg-card/50 overflow-hidden min-h-[400px] shadow-sm flex flex-col">
       <CardHeader className="py-3 px-4 border-b border-border/50 bg-secondary/10">
         <div className="flex justify-between items-center">
           <div>
@@ -386,20 +407,27 @@ export const ChartPanel = React.memo(({
             <AlertCircle className="h-6 w-6" />
             <span className="text-sm font-medium">{error}</span>
           </div>
+        ) : ioSupported && !hasBeenVisible ? (
+          /* 隐藏视图里不挂图表：lightweight-charts 不随首屏下载 */
+          <ChartSkeleton />
         ) : compareMode && Object.keys(compareResults).length > 0 ? (
           <div key={compareKey} className="w-full h-[400px]">
-            <BacktestChart
-              series={compareSeries}
-              colors={{ backgroundColor: 'transparent' }}
-            />
+            <Suspense fallback={<ChartSkeleton />}>
+              <BacktestChart
+                series={compareSeries}
+                colors={{ backgroundColor: 'transparent' }}
+              />
+            </Suspense>
           </div>
         ) : result ? (
           <div key={`${chartKey}-${chartView}`} className="w-full h-[400px]">
-            <BacktestChart
-              data={chartView === "equity" ? result.equity_curve : result.drawdown_curve}
-              onHoverTime={setHoveredTime}
-              colors={{ backgroundColor: 'transparent' }}
-            />
+            <Suspense fallback={<ChartSkeleton />}>
+              <BacktestChart
+                data={chartView === "equity" ? result.equity_curve : result.drawdown_curve}
+                onHoverTime={setHoveredTime}
+                colors={{ backgroundColor: 'transparent' }}
+              />
+            </Suspense>
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">{t.no_data}</div>

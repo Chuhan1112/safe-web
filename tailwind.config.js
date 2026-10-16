@@ -116,6 +116,15 @@ export default {
           from: { translate: '0 0' },
           to: { translate: 'var(--motion-sheet-from, 0 0)' },
         },
+        /* Calendar range：fill 颜色慢半拍，knob 弹簧浮现（取代 motion FLIP） */
+        'cal-fill-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'cal-knob-in': {
+          from: { opacity: '0', scale: '0.6' },
+          to: { opacity: '1', scale: '1' },
+        },
       },
       animation: {
         'motion-in': 'motion-in var(--dur-enter) var(--ease-enter) both',
@@ -124,6 +133,8 @@ export default {
         'motion-fade-out': 'motion-fade-out var(--dur-snap) var(--ease-snap) both',
         'motion-sheet-in': 'motion-sheet-in var(--dur-move) var(--ease-spring) both',
         'motion-sheet-out': 'motion-sheet-out var(--dur-snap) var(--ease-snap) both',
+        'cal-fill-in': 'cal-fill-in 250ms var(--ease-enter) 80ms both',
+        'cal-knob-in': 'cal-knob-in 220ms var(--ease-spring) both',
       },
     },
   },

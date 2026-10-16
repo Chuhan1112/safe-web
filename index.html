@@ -5,11 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Safe Workspace</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- 字体 CSS 用 <link> 而不是 globals.css 里的 @import：@import 要等主 CSS
-         下载并解析完才被发现，实测字体链路拖到 ~1.8s 才结束，是 LCP 的长杆。 -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap">
+    <!-- 字体已自托管（public/fonts/*.woff2，见 globals.css 的 @font-face）：
+         消除对 fonts.googleapis 的阻塞依赖，DCL/LCP 不再受其响应时间影响。 -->
   </head>
   <body>
     <div id="root"></div>

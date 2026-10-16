@@ -46,7 +46,7 @@ Node 版本要求：≥20 <25，推荐使用 Node 22（见 `.nvmrc`）。
 
 - `src/globals.css` — 包含已确认的字体、颜色 token、玻璃态效果、背景光晕和间距氛围，大改会让 app 视觉风格面目全非
 - `tailwind.config.js` / `postcss.config.js` / `vite.config.ts` — 绑定当前 Tailwind v3 工具链，升级 Tailwind 或改变插件配置曾导致 UI 风格变化并破坏本地开发
-- `src/components/ui/calendar.tsx` — 对 `react-day-picker` 版本敏感，且承载 motion 弹簧动画层（详见"Calendar 弹簧动画"小节的不变量）；改动组件 API 时必须同步对齐包版本，改样式前先读动画不变量
+- `src/components/ui/calendar.tsx` — 对 `react-day-picker` 版本敏感，且承载 CSS 弹簧动画层（`animate-cal-fill` / `animate-cal-knob`，详见"Calendar 弹簧动画"小节的不变量）；改动组件 API 时必须同步对齐包版本，改样式前先读动画不变量
 
 ## UI 改动验证规范
 
@@ -99,7 +99,7 @@ UI 改动**必须用无头浏览器截图自查后才能声称完成**（本机�
 | `src/components/TickerLink.tsx` | 标的代码按钮，点击触发回调（不导航） |
 | `src/components/skeletons/` | `ChartSkeleton`、`TableSkeleton` 加载占位 |
 | `src/components/ui/` | 可复用 UI 原语（Button、Badge、Card、Table、Calendar、Dialog、Tabs 等） |
-| `src/components/ui/calendar.tsx` | react-day-picker v9 封装 + motion 弹簧动画层（range fill/knob）+ 可选 `presets` 快捷范围 chips，详见下方"Calendar 弹簧动画"小节 |
+| `src/components/ui/calendar.tsx` | react-day-picker v9 封装 + CSS 弹簧动画层（range fill/knob，纯 CSS，无 motion 依赖）+ 可选 `presets` 快捷范围 chips，详见下方"Calendar 弹簧动画"小节 |
 | `src/lib/privateOverlay.ts` | 私有覆盖层加载器：`import.meta.glob` 动态加载 `src/private/index.{ts,tsx}` |
 | `src/mock/demoData.ts` | Mock 数据结构和类型定义 |
 | `src/lib/utils.ts` | `cn()` 工具函数 |
@@ -160,7 +160,7 @@ Safe/Private 视图切换和 SafeWorkspace 内的 Tab 切换均使用 **CSS hidd
 
 ### Calendar 弹簧动画（`ui/calendar.tsx`）
 
-react-day-picker v9 封装，`mode="range"` 时注入 motion 动画层（复刻 Jeet 的 Date Range Picker：fill 弹簧移动、颜色慢半拍）。**消费契约**：现有 props 全部透传，私有区消费者零改动兼容。
+react-day-picker v9 封装，`mode="range"` 时注入 CSS 动画层（复刻 Jeet 的 Date Range Picker：fill 颜色慢半拍、knob 弹簧浮现；已从 motion 迁移到纯 CSS，见文末「性能预算」）。**消费契约**：现有 props 全部透传，私有区消费者零改动兼容。
 
 **新增 API**：`presets?: CalendarPreset[]`（`{ label, getRange: (today) => { from, to } }`），渲染顶部快捷 chips；未传或非 range 模式不渲染。
 
@@ -172,7 +172,7 @@ react-day-picker v9 封装，`mode="range"` 时注入 motion 动画层（复刻 
 - **fill 透明度刻度**：`bg-primary/15`（light）/ `dark:bg-primary/[0.07]`。注意 `/12` 这类非标准刻度 Tailwind v3 不生成 CSS（静默失效），只能用预设刻度或 arbitrary `[0.07]`。
 - **range 内跨月 outside 日**：文字不能随 outside 置灰（`!text-foreground/60` 压过 outside 后代选择器），否则置灰字 + fill 覆盖语义矛盾。
 - **preset 点击后跳月**：`displayMonth` state 带到新范围末端（`month` 受控），否则动画发生在视野外等于没做。
-- **动画参数**：位移 spring(500/35/1)、fill opacity 走 `delay 0.08s / 0.25s` tween（"颜色慢半拍"）；`useReducedMotion()` 时全部 duration 0。
+- **动画参数（纯 CSS 版）**：fill = `animate-cal-fill`（250ms enter 曲线，delay 80ms，"颜色慢半拍"）；knob = `animate-cal-knob`（220ms spring 曲线，scale 0.6→1）；`prefers-reduced-motion` 时组件不挂动画类。位移不做逐格 FLIP（曾用 motion layout 投影，实测单次交互 1040 次函数调用/62ms 主线程，已移除）。
 - **非 range 模式不注入 DayButton**（`components` 仅 range 时加 `AnimatedDayButton`），缩小影响面。
 
 **测试**：`src/__tests__/calendar-presets.test.tsx`（presets 渲染/回调/缺省不渲染）；动画与视觉不做单测（jsdom 无布局），靠无头浏览器截图验证。

@@ -99,38 +99,23 @@ export const BacktestChart = memo(function BacktestChart({ data, series, onHover
   } = colors
   const textColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
 
-  useEffect(() => {
-    if (!chartRef.current) return
 
-    const resolvedTextColor = colors.textColor ?? (isDark ? '#d1d5db' : '#334155')
-    const gridLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
-    const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-
-    chartRef.current.applyOptions({
-      layout: { textColor: resolvedTextColor },
-      grid: {
-        vertLines: { color: gridLineColor },
-        horzLines: { color: gridLineColor },
-      },
-      timeScale: { borderColor },
-      rightPriceScale: { borderColor },
-    })
-  }, [colors.textColor, isDark])
-
-  // Effect 1: 创建图表 + ResizeObserver（颜色变化时重建图表）
+  // Effect 1: 图表只随挂载创建/销毁一次；尺寸交给 autoSize（库内部自带
+  // ResizeObserver + rAF 节流），颜色/主题变化统一走下方 applyOptions 通道。
+  // 之前 deps 里带颜色：切一次主题 = 整图销毁重建 + 全部 series 重灌数据。
   useEffect(() => {
     if (!chartContainerRef.current) return
 
-    const gridLineColor = isDarkRef.current ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
-    const borderColor = isDarkRef.current ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+    const dark = isDarkRef.current
+    const gridLineColor = dark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
 
     const chart = createChart(chartContainerRef.current, {
+      autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: backgroundColor },
         textColor,
       },
-      width: chartContainerRef.current.clientWidth,
-      height: 400,
       grid: {
         vertLines: { color: gridLineColor },
         horzLines: { color: gridLineColor },
@@ -141,24 +126,36 @@ export const BacktestChart = memo(function BacktestChart({ data, series, onHover
 
     chartRef.current = chart
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (!chartRef.current || entries.length === 0) return
-      const { width } = entries[0].contentRect
-      chartRef.current.applyOptions({ width })
-    })
-
-    if (chartContainerRef.current) {
-      resizeObserver.observe(chartContainerRef.current)
-    }
-
     return () => {
-      resizeObserver.disconnect()
       chart.remove()
       chartRef.current = null
       primarySeriesRef.current = null
       seriesRefsRef.current = []
     }
-  }, [backgroundColor, lineColor, textColor, areaTopColor, areaBottomColor])
+    // 仅挂载期生命周期；颜色/主题由下方 effect 处理（isDarkRef 取首帧值即可，
+    // 主题 effect 会在同一帧内把最终颜色 applyOptions 上去）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Effect 1b: 主题/颜色变化 → 只更新 chart runtime options
+  useEffect(() => {
+    if (!chartRef.current) return
+    const gridLineColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+    const borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+
+    chartRef.current.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: backgroundColor },
+        textColor,
+      },
+      grid: {
+        vertLines: { color: gridLineColor },
+        horzLines: { color: gridLineColor },
+      },
+      timeScale: { borderColor },
+      rightPriceScale: { borderColor },
+    })
+  }, [backgroundColor, textColor, isDark])
 
   // Effect 2: 序列数据管理 + 十字线订阅（数据或 emitHover 变化时更新）
   useEffect(() => {
