@@ -25,8 +25,26 @@ interface TradeLogRow {
   [key: string]: unknown
 }
 
+interface RebalanceLogFallback {
+  PortfolioValue?: number
+  CashWeight?: string
+  Selected?: string[]
+  Weights?: Record<string, string>
+  Names?: Record<string, string>
+  Prices?: Record<string, number>
+}
+
+const CHIP_LIMIT = 8
+
+function weightOfHolding(entry: string): number {
+  const m = entry.match(/\(([\d.]+)%\)/)
+  return m ? parseFloat(m[1]) : 0
+}
+
 interface TradeLogsTableProps {
   logs: TradeLogRow[]
+  /** 调仓日志（按日期索引）。Rust/月度路径的逐笔成交没有股数快照，用它回填市值/权重 */
+  rebalanceByDate?: Record<string, RebalanceLogFallback>
   logFilter: string
   t: { action?: string; symbol?: string; price?: string; reason?: string; date?: string; portfolio_value?: string; buy?: string; sold?: string; holds?: string; empty?: string; cash_weight?: string }
   handleTickerClick: (ticker: string) => void
@@ -35,7 +53,7 @@ interface TradeLogsTableProps {
   comparePalette?: string[]
 }
 
-export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, highlightDate, market }: TradeLogsTableProps) => {
+export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, highlightDate, market, rebalanceByDate }: TradeLogsTableProps) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [actionFilter, setActionFilter] = useState<Set<string>>(new Set())
   const tableRef = useRef<HTMLDivElement>(null)
@@ -90,19 +108,33 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
         const sells = trades.filter((t) => t.Action === 'SELL')
         // 同日所有 trade 共享同一个 EOD Snapshot（后端 rebuild_daily_snapshots 保证）
         const snap = trades[0]?.Snapshot
-        const eq = snap?.total_equity
-        const holdList = snap?.holdings || []
-        const names = snap?.names || {}
-        const cashWeight = snap?.cash_weight || '0%'
+        // 调仓型策略（月度/自适应）的逐笔成交由调仓日志合成，后端再按股数重建的 EOD Snapshot
+        // 会漂移成离谱组合（例：39 只持仓 / 现金 -36%）。这里以同日调仓日志为准，
+        // 逐笔成交只负责“操作明细”，市值/持仓/权重一律取调仓日志。
+        const fallback = rebalanceByDate?.[date]
+        const useFallback = Boolean(fallback && (fallback.PortfolioValue != null || fallback.Weights))
+        const fallbackWeights = fallback?.Weights || {}
+        const eq = useFallback ? fallback?.PortfolioValue : snap?.total_equity
+        // 大仓位策略可能同时持有几十只，摘要行按权重倒序并折叠，展开后才看全量
+        const holdList = (useFallback
+          ? Object.keys(fallbackWeights).map((ticker) => `${ticker} (${fallbackWeights[ticker]})`)
+          : (snap?.holdings || [])).slice().sort((a, b) => weightOfHolding(b) - weightOfHolding(a))
+        const names = (useFallback ? fallback?.Names : snap?.names) || {}
+        const cashWeight = (useFallback ? fallback?.CashWeight : snap?.cash_weight) || '0%'
         // 继续持有 = EOD 持仓中剔除当天买入的
         const todayBuyTickers = new Set(buys.map(t => String(t.Ticker || '')))
         const continuingHoldings = holdList.filter((h: string) => {
           const ticker = h.split('(')[0].trim()
           return !todayBuyTickers.has(ticker)
         })
-        return { date, trades, buys, sells, count: trades.length, equity: eq, holdings: holdList, names, cashWeight, continuingHoldings, holdingsDetail: snap?.holdings_detail || {} }
+        const holdingsDetail = useFallback
+          ? Object.fromEntries(
+              Object.keys(fallbackWeights).map((ticker) => [ticker, { price: fallback?.Prices?.[ticker] }]),
+            )
+          : (snap?.holdings_detail || {})
+        return { date, trades, buys, sells, count: trades.length, equity: eq, holdings: holdList, names, cashWeight, continuingHoldings, holdingsDetail }
       })
-  }, [logs, logFilter, actionFilter])
+  }, [logs, logFilter, actionFilter, rebalanceByDate])
 
   useEffect(() => {
     if (!highlightDate || !tableRef.current) return
@@ -181,7 +213,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {buys.map((log) => {
+                            {buys.slice(0, CHIP_LIMIT).map((log) => {
                               const ticker = String(log.Ticker || '')
                               const name = log.TickerName || ticker
                               const key = `buy|${String(log.Date ?? '')}|${ticker}|${log.Action ?? ''}|${log.Price ?? ''}`
@@ -196,6 +228,11 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                 </span>
                               )
                             })}
+                            {buys.length > CHIP_LIMIT && (
+                              <span className="inline-flex items-center rounded-md border border-dashed border-green-500/30 px-2 py-0.5 text-2xs font-mono text-muted-foreground/60">
+                                +{buys.length - CHIP_LIMIT}
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -209,7 +246,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {continuingHoldings.map((h: string) => {
+                            {continuingHoldings.slice(0, CHIP_LIMIT).map((h: string) => {
                               const ticker = h.split('(')[0].trim()
                               const display = names[ticker] || ticker
                               const pct = h.match(/\((.*)\)/)?.[1] || '--'
@@ -226,6 +263,11 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                 </span>
                               )
                             })}
+                            {continuingHoldings.length > CHIP_LIMIT && (
+                              <span className="inline-flex items-center rounded-md border border-dashed border-border/60 px-2 py-0.5 text-2xs font-mono text-muted-foreground/60">
+                                +{continuingHoldings.length - CHIP_LIMIT} 只
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -238,7 +280,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {sells.map((log) => {
+                            {sells.slice(0, CHIP_LIMIT).map((log) => {
                               const ticker = String(log.Ticker || '')
                               const name = log.TickerName || ticker
                               const pnl = Number(log.PnL) || 0
@@ -259,6 +301,11 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                 </span>
                               )
                             })}
+                            {sells.length > CHIP_LIMIT && (
+                              <span className="inline-flex items-center rounded-md border border-dashed border-red-500/30 px-2 py-0.5 text-2xs font-mono text-muted-foreground/60">
+                                +{sells.length - CHIP_LIMIT}
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -271,7 +318,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                   {/* 持仓权重 — 对齐月度 Weights 列（权重条） */}
                   <TableCell className="text-right py-2 align-top">
                     <div className="flex flex-wrap justify-end gap-1.5 ml-auto max-w-[280px]">
-                      {holdings.length > 0 ? holdings.map((h: string) => {
+                      {holdings.length > 0 ? holdings.slice(0, CHIP_LIMIT).map((h: string) => {
                         const ticker = h.split('(')[0].trim()
                         const display = names[ticker] || ticker
                         const pctStr = h.match(/\((.*)\)/)?.[1] || '0%'
@@ -285,6 +332,12 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                         )
                       }) : (
                         <span className="text-2xs text-muted-foreground/20">--</span>
+                      )}
+                      {holdings.length > CHIP_LIMIT && (
+                        <div className="relative border border-dashed border-border/50 bg-secondary/5 rounded-sm px-1.5 py-0.5 min-w-[72px] flex justify-between items-center text-2xs font-mono text-muted-foreground/60">
+                          <span>+{holdings.length - CHIP_LIMIT}</span>
+                          <span>共{holdings.length}</span>
+                        </div>
                       )}
                       {holdings.length > 0 && cashWeight && parseFloat(cashWeight) > 0 && (
                         <div className="relative group border border-yellow-500/20 bg-yellow-500/5 rounded-sm overflow-hidden px-1.5 py-0.5 min-w-[72px] flex justify-between items-center z-0 shadow-sm">
@@ -356,7 +409,7 @@ export const TradeLogsTable = memo(({ logs, logFilter, t, handleTickerClick, hig
                                   <span className="text-2xs font-mono text-muted-foreground/60 tabular-nums font-medium">
                                     {formatPrice(log.Price, currencySymbol)}
                                   </span>
-                                  {log.Shares != null && (
+                                  {Number(log.Shares) > 0 && (
                                     <span className="text-2xs font-mono text-muted-foreground/40 tabular-nums font-medium">×{log.Shares}</span>
                                   )}
                                   <span className={cn("inline-flex px-1.5 py-0 rounded-[3px] text-[8px] font-bold border uppercase tracking-[0.04em]", bs)}>{reason}</span>

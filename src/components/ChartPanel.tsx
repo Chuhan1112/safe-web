@@ -308,7 +308,7 @@ export const ChartPanel = React.memo(({
       </CardHeader>
       <CardContent className="p-0 flex-1 relative">
         {!compareMode && hoveredTime && hoveredSnapshot && (
-          <div className="absolute top-3 left-3 z-10 pointer-events-none transition-opacity duration-200 max-w-[65%] md:max-w-[50%]">
+          <div className="absolute top-3 left-3 z-10 pointer-events-none transition-opacity duration-snap ease-snap max-w-[65%] md:max-w-[50%]">
             <div className="rounded-lg border border-border/40 bg-background/80 backdrop-blur-md px-3 py-2.5 shadow-sm">
               <div className="flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-4">

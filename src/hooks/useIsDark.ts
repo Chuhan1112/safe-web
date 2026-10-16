@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 
-export type Theme = 'light' | 'dark' | 'perplexity'
+export type Theme = 'light' | 'dark'
 
-const VALID_THEMES: readonly Theme[] = ['light', 'dark', 'perplexity']
+const VALID_THEMES: readonly Theme[] = ['light', 'dark']
 
 /**
  * 解析初始主题：localStorage 白名单优先，其次 <html> 类名，默认 dark。
- * localStorage 只认三个合法值，脏数据回退。
+ * localStorage 只认两个合法值，脏数据回退（历史遗留的 'perplexity' 会一并回退到 dark）。
  */
 export function getInitialTheme(): Theme {
   if (typeof localStorage !== 'undefined') {
@@ -15,13 +15,12 @@ export function getInitialTheme(): Theme {
   }
   if (typeof document !== 'undefined') {
     if (document.documentElement.classList.contains('light')) return 'light'
-    if (document.documentElement.classList.contains('perplexity')) return 'perplexity'
   }
   return 'dark'
 }
 
 /**
- * Reactively tracks whether the current theme is dark (dark or perplexity).
+ * Reactively tracks whether the current theme is dark.
  * If `theme` is provided, it wins over DOM observation.
  */
 export function useIsDark(theme?: Theme): boolean {
@@ -43,15 +42,13 @@ export function useIsDark(theme?: Theme): boolean {
 }
 
 /**
- * Reactively reads the actual three-state theme from <html>.
- * Private overlay UI needs this to distinguish dark from perplexity.
+ * Reactively reads the actual two-state theme from <html>.
  */
 export function useTheme(): Theme {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof document === 'undefined') return 'dark'
     const cls = document.documentElement.classList
     if (cls.contains('light')) return 'light'
-    if (cls.contains('perplexity')) return 'perplexity'
     return 'dark'
   })
 
@@ -60,7 +57,7 @@ export function useTheme(): Theme {
 
     const sync = () => {
       const cls = document.documentElement.classList
-      setTheme(cls.contains('light') ? 'light' : cls.contains('perplexity') ? 'perplexity' : 'dark')
+      setTheme(cls.contains('light') ? 'light' : 'dark')
     }
     const observer = new MutationObserver(sync)
     observer.observe(document.documentElement, { attributeFilter: ['class'] })

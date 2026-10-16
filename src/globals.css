@@ -45,6 +45,18 @@
     --chart-6: 186 92% 36%;
 
     --radius: 0.625rem;
+
+    /* Motion vocabulary — keep in sync with src/lib/motion.ts and
+       tailwind.config.js (ease-snap / duration-move / ...). */
+    --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.32, 0.44, 1);
+    --ease-liquid: cubic-bezier(0.32, 1.5, 0.5, 1);
+    --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+
+    --dur-press: 90ms;
+    --dur-snap: 140ms;
+    --dur-move: 220ms;
+    --dur-enter: 280ms;
   }
 
   .dark {
@@ -146,7 +158,7 @@
     :where(body, .trading-shell, .trading-shell *) {
       transition-property: background-color, border-color, color, fill, stroke;
       transition-duration: 180ms;
-      transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition-timing-function: var(--ease-snap);
     }
   }
 
@@ -295,7 +307,44 @@
   }
 
   .animate-fade-up {
-    animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: fade-up var(--dur-enter) var(--ease-enter) both;
+  }
+
+  /* Canonical hover + press for anything clickable.
+     Colour settles on `snap`; geometry settles on `spring`, so the release
+     carries a small overshoot. Do not combine with `transition-*`,
+     `duration-*` or `active:scale-*` utilities — they override this. */
+  .motion-interactive {
+    transition:
+      color var(--dur-snap) var(--ease-snap),
+      background-color var(--dur-snap) var(--ease-snap),
+      border-color var(--dur-snap) var(--ease-snap),
+      box-shadow var(--dur-snap) var(--ease-snap),
+      opacity var(--dur-snap) var(--ease-snap),
+      transform var(--dur-move) var(--ease-spring);
+  }
+
+  .motion-interactive:active {
+    transform: scale(0.97);
+    transition:
+      color var(--dur-snap) var(--ease-snap),
+      background-color var(--dur-snap) var(--ease-snap),
+      border-color var(--dur-snap) var(--ease-snap),
+      box-shadow var(--dur-snap) var(--ease-snap),
+      opacity var(--dur-snap) var(--ease-snap),
+      transform var(--dur-press) var(--ease-snap);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-up {
+      animation: none;
+    }
+
+    .motion-interactive,
+    .motion-interactive:active {
+      transition-duration: 1ms;
+      transform: none;
+    }
   }
 
   .custom-scrollbar::-webkit-scrollbar {

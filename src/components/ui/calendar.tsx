@@ -182,12 +182,12 @@ function Calendar({
                     years_dropdown: "rdp-years_dropdown",
                     nav: "rdp-nav flex items-center gap-1.5",
                     button_previous: cn(
-                        "rdp-button_previous absolute left-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
+                        "rdp-button_previous absolute left-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-colors duration-snap ease-snap hover:bg-secondary hover:text-foreground",
                         buttonVariants({ variant: "outline" }),
                         "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
                     ),
                     button_next: cn(
-                        "rdp-button_next absolute right-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-all hover:bg-secondary hover:text-foreground",
+                        "rdp-button_next absolute right-3 top-4 rounded-md border border-border/40 bg-transparent text-muted-foreground transition-colors duration-snap ease-snap hover:bg-secondary hover:text-foreground",
                         buttonVariants({ variant: "outline" }),
                         "h-7 w-7 p-0 opacity-70 hover:opacity-100 z-10 flex items-center justify-center"
                     ),

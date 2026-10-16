@@ -28,7 +28,7 @@ function App() {
 
   useLayoutEffect(() => {
     if (typeof document === 'undefined') return
-    document.documentElement.classList.remove('light', 'dark', 'perplexity')
+    document.documentElement.classList.remove('light', 'dark')
     document.documentElement.classList.add(theme)
   }, [theme])
 
@@ -40,7 +40,7 @@ function App() {
   // 私有工作区的主题按钮也由这里统一处理，避免两个 App 互相覆盖 <html> 类名。
   useEffect(() => {
     const handleThemeToggle = () => {
-      setTheme((v) => (v === 'light' ? 'dark' : v === 'dark' ? 'perplexity' : 'light'))
+      setTheme((v) => (v === 'light' ? 'dark' : 'light'))
     }
     window.addEventListener('cortex:theme-toggle', handleThemeToggle)
     return () => window.removeEventListener('cortex:theme-toggle', handleThemeToggle)
@@ -50,9 +50,7 @@ function App() {
     if (typeof document === 'undefined') return
     const syncTheme = () => {
       const cls = document.documentElement.classList
-      let nextTheme: Theme = 'dark'
-      if (cls.contains('light')) nextTheme = 'light'
-      else if (cls.contains('perplexity')) nextTheme = 'perplexity'
+      const nextTheme: Theme = cls.contains('light') ? 'light' : 'dark'
       setTheme((current) => (current === nextTheme ? current : nextTheme))
     }
     const observer = new MutationObserver(syncTheme)
@@ -91,7 +89,7 @@ function App() {
           else if (view !== 'private') setActiveView(view)
         }}
         theme={theme}
-        onThemeToggle={() => setTheme((v) => (v === 'light' ? 'dark' : v === 'dark' ? 'perplexity' : 'light'))}
+        onThemeToggle={() => setTheme((v) => (v === 'light' ? 'dark' : 'light'))}
         canOpenPrivate={!!canOpenPrivate}
         onNavigateToPrivate={(tab) => {
           if (!canOpenPrivate) return

@@ -21,7 +21,7 @@ export const IndicatorToggles = ({ indicators, onToggle, className }: IndicatorT
         key={ind.id}
         onClick={() => onToggle(ind.id)}
         className={cn(
-          'rounded-md border px-2.5 py-1 text-xs font-semibold transition-all',
+          'rounded-md border px-2.5 py-1 text-xs font-semibold motion-interactive',
           ind.visible
             ? 'border-current/20'
             : 'border-border/50 bg-background/50 text-muted-foreground/40 hover:text-muted-foreground/70',

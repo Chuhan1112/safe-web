@@ -178,11 +178,11 @@ export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
     const rateLimited = taskStatus.phase === 'rate_limited';
 
     return (
-      <Card className="border-border/60 bg-card/40 backdrop-blur-sm hover:border-primary/30 transition-all duration-300 group">
+      <Card className="border-border/60 bg-card/40 backdrop-blur-sm hover:border-primary/30 transition-colors duration-snap ease-snap group">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 group-hover:scale-110 transition-transform duration-500">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 group-hover:scale-[1.05] transition-transform duration-move ease-spring">
                 {icon}
               </div>
               <div className="space-y-1">
@@ -270,7 +270,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
               disabled={isRunning}
               variant={isRunning ? "secondary" : "default"}
               className={cn(
-                "h-10 px-6 rounded-xl font-bold transition-all active:scale-95 gap-2",
+                "h-10 px-6 rounded-xl font-bold gap-2",
                 !isRunning && "shadow-lg shadow-primary/20 hover:shadow-primary/40"
               )}
             >
@@ -284,7 +284,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({ t }) => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8 animate-fade-up">
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-black tracking-tight text-foreground/90">{t.data_management}</h2>

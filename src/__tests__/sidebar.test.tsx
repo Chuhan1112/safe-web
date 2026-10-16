@@ -66,7 +66,7 @@ describe("Sidebar", () => {
 
   it("renders theme toggle button", () => {
     const html = renderToStaticMarkup(<Sidebar {...defaultProps} />)
-    expect(html).toContain("切换到 Perplexity 主题")
+    expect(html).toContain("切换到 Light 主题")
   })
 
   it("highlights active public item", () => {
@@ -74,12 +74,6 @@ describe("Sidebar", () => {
       <Sidebar {...defaultProps} activeView="optimizer" />,
     )
     expect(html).toContain("bg-primary/10")
-  })
-
-  it("shows correct theme toggle title for perplexity theme", () => {
-    const html = renderToStaticMarkup(<Sidebar {...defaultProps} theme="perplexity" />)
-    expect(html).toContain('title="切换到 Light 主题"')
-    expect(html).toContain("Sparkles")
   })
 
   it("shows correct theme toggle title for light theme", () => {
@@ -90,19 +84,18 @@ describe("Sidebar", () => {
 
   it("shows correct theme toggle title for dark theme", () => {
     const html = renderToStaticMarkup(<Sidebar {...defaultProps} theme="dark" />)
-    expect(html).toContain('title="切换到 Perplexity 主题"')
+    expect(html).toContain('title="切换到 Light 主题"')
     expect(html).toContain("Moon")
   })
 
-  it("cycles theme titles correctly through three states", () => {
+  it("cycles theme titles correctly through two states", () => {
     const titles = {
       light: '切换到 Dark 主题',
-      dark: '切换到 Perplexity 主题',
-      perplexity: '切换到 Light 主题',
+      dark: '切换到 Light 主题',
     }
     for (const [theme, expectedTitle] of Object.entries(titles)) {
       const html = renderToStaticMarkup(
-        <Sidebar {...defaultProps} theme={theme as "light" | "dark" | "perplexity"} />,
+        <Sidebar {...defaultProps} theme={theme as "light" | "dark"} />,
       )
       expect(html).toContain(`title="${expectedTitle}"`)
     }
@@ -110,11 +103,6 @@ describe("Sidebar", () => {
 })
 
 describe("useIsDark", () => {
-  it("returns true for perplexity theme argument", () => {
-    const { result } = renderHook(() => useIsDark("perplexity"))
-    expect(result.current).toBe(true)
-  })
-
   it("returns true for dark theme argument", () => {
     const { result } = renderHook(() => useIsDark("dark"))
     expect(result.current).toBe(true)
@@ -125,20 +113,8 @@ describe("useIsDark", () => {
     expect(result.current).toBe(false)
   })
 
-  it("observes DOM class for perplexity and returns true", async () => {
-    document.documentElement.classList.remove("light", "perplexity")
-    act(() => {
-      document.documentElement.classList.add("perplexity")
-    })
-    const { result } = renderHook(() => useIsDark())
-    await waitFor(() => expect(result.current).toBe(true))
-    act(() => {
-      document.documentElement.classList.remove("perplexity")
-    })
-  })
-
   it("observes DOM class changes reactively", async () => {
-    document.documentElement.classList.remove("light", "perplexity")
+    document.documentElement.classList.remove("light", "dark")
     const { result } = renderHook(() => useIsDark())
     await waitFor(() => expect(result.current).toBe(true)) // no 'light' class → dark
 
@@ -155,17 +131,17 @@ describe("useIsDark", () => {
 describe("getInitialTheme", () => {
   beforeEach(() => {
     localStorage.clear()
-    document.documentElement.classList.remove("light", "dark", "perplexity")
+    document.documentElement.classList.remove("light", "dark")
   })
 
   afterEach(() => {
     localStorage.clear()
-    document.documentElement.classList.remove("light", "dark", "perplexity")
+    document.documentElement.classList.remove("light", "dark")
   })
 
-  it("restores perplexity theme from localStorage", () => {
+  it("falls back to dark for the legacy 'perplexity' value", () => {
     localStorage.setItem("theme", "perplexity")
-    expect(getInitialTheme()).toBe("perplexity")
+    expect(getInitialTheme()).toBe("dark")
   })
 
   it("restores light and dark from localStorage", () => {
@@ -180,11 +156,6 @@ describe("getInitialTheme", () => {
     expect(getInitialTheme()).toBe("dark")
   })
 
-  it("reads perplexity from <html> class when localStorage is empty", () => {
-    document.documentElement.classList.add("perplexity")
-    expect(getInitialTheme()).toBe("perplexity")
-  })
-
   it("reads light from <html> class when localStorage is empty", () => {
     document.documentElement.classList.add("light")
     expect(getInitialTheme()).toBe("light")
@@ -195,8 +166,8 @@ describe("getInitialTheme", () => {
   })
 
   it("localStorage wins over <html> class", () => {
-    localStorage.setItem("theme", "perplexity")
+    localStorage.setItem("theme", "dark")
     document.documentElement.classList.add("light")
-    expect(getInitialTheme()).toBe("perplexity")
+    expect(getInitialTheme()).toBe("dark")
   })
 })

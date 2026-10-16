@@ -68,6 +68,63 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      /* Motion vocabulary — keep in sync with src/lib/motion.ts and the
+         `--ease-*` / `--dur-*` custom properties in src/globals.css. */
+      transitionTimingFunction: {
+        snap: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        spring: 'cubic-bezier(0.34, 1.32, 0.44, 1)',
+        liquid: 'cubic-bezier(0.32, 1.5, 0.5, 1)',
+        enter: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      transitionDuration: {
+        press: '90ms',
+        snap: '140ms',
+        move: '220ms',
+        enter: '280ms',
+      },
+      /* Radix overlay enter/exit. Written by hand instead of pulling in
+         `tailwindcss-animate`: the previous `animate-in` / `slide-in-from-*`
+         classes were never compiled, so every dialog, popover, select and
+         sheet popped in with no animation at all.
+         `translate` / `scale` are used as standalone properties so they
+         compose with Tailwind's `transform`-based centering. */
+      keyframes: {
+        'motion-in': {
+          from: { opacity: '0', translate: '0 4px', scale: '0.97' },
+          to: { opacity: '1', translate: '0 0', scale: '1' },
+        },
+        'motion-out': {
+          from: { opacity: '1', translate: '0 0', scale: '1' },
+          to: { opacity: '0', translate: '0 2px', scale: '0.99' },
+        },
+        'motion-fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'motion-fade-out': {
+          from: { opacity: '1' },
+          to: { opacity: '0' },
+        },
+        /* `translate` the standalone property, not `translate()` the transform
+           function: the function takes comma-separated arguments, so
+           `translate(100% 0)` is invalid and silently does nothing. */
+        'motion-sheet-in': {
+          from: { translate: 'var(--motion-sheet-from, 0 0)' },
+          to: { translate: '0 0' },
+        },
+        'motion-sheet-out': {
+          from: { translate: '0 0' },
+          to: { translate: 'var(--motion-sheet-from, 0 0)' },
+        },
+      },
+      animation: {
+        'motion-in': 'motion-in var(--dur-enter) var(--ease-enter) both',
+        'motion-out': 'motion-out var(--dur-snap) var(--ease-snap) both',
+        'motion-fade-in': 'motion-fade-in var(--dur-enter) var(--ease-enter) both',
+        'motion-fade-out': 'motion-fade-out var(--dur-snap) var(--ease-snap) both',
+        'motion-sheet-in': 'motion-sheet-in var(--dur-move) var(--ease-spring) both',
+        'motion-sheet-out': 'motion-sheet-out var(--dur-snap) var(--ease-snap) both',
+      },
     },
   },
   plugins: [],

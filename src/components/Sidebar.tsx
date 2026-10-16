@@ -1,6 +1,6 @@
 // src/components/Sidebar.tsx — 响应式侧边栏（桌面图标+文字 / 移动底部 Tab 栏）
 import { cn } from '@/lib/utils'
-import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Sparkles, Search, Wifi, WifiOff } from 'lucide-react'
+import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
 import { api } from '@/lib/api/client'
 import { useState, useEffect } from 'react'
@@ -38,7 +38,7 @@ function NavButton({ item, isActive, onClick }: { item: { id: string; icon: Reac
       onClick={onClick}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'group relative flex h-9 w-9 md:h-9 md:w-12 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] flex-col gap-0.5',
+        'group relative flex h-9 w-9 md:h-9 md:w-12 items-center justify-center rounded-lg motion-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex-col gap-0.5',
         isActive
           ? 'bg-primary/10 text-primary'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -49,7 +49,7 @@ function NavButton({ item, isActive, onClick }: { item: { id: string; icon: Reac
       <span className="text-2xs leading-none hidden md:block">{item.label}</span>
       <span
         className={cn(
-          'absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary hidden md:block transition-all duration-200',
+          'absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary hidden md:block transition-[transform,opacity] duration-move ease-spring',
           isActive ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0',
         )}
       />
@@ -111,7 +111,7 @@ function SidebarMarketToggle() {
         onClick={() => setMarket('US')}
         aria-pressed={isUS}
         className={cn(
-          'flex h-6 w-6 items-center justify-center rounded-md text-2xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]',
+          'flex h-6 w-6 items-center justify-center rounded-md text-2xs font-bold motion-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isUS
             ? 'bg-market-us/10 text-market-us'
             : 'text-muted-foreground hover:text-foreground',
@@ -124,7 +124,7 @@ function SidebarMarketToggle() {
         onClick={() => setMarket('CN')}
         aria-pressed={!isUS}
         className={cn(
-          'flex h-6 w-6 items-center justify-center rounded-md text-2xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]',
+          'flex h-6 w-6 items-center justify-center rounded-md text-2xs font-bold motion-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           !isUS
             ? 'bg-market-cn/10 text-market-cn'
             : 'text-muted-foreground hover:text-foreground',
@@ -178,10 +178,10 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
         <button
           onClick={onThemeToggle}
           aria-label="切换主题"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
-          title={theme === 'light' ? '切换到 Dark 主题' : theme === 'dark' ? '切换到 Perplexity 主题' : '切换到 Light 主题'}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground motion-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          title={theme === 'light' ? '切换到 Dark 主题' : '切换到 Light 主题'}
         >
-          {theme === 'light' ? <Sun className="h-[18px] w-[18px]" /> : theme === 'dark' ? <Moon className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}
+          {theme === 'light' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
         </button>
       </nav>
 
@@ -204,7 +204,7 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
                 }
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] min-w-0',
+                'flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md motion-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0',
                 isActive
                   ? 'bg-accent text-accent-foreground'
                   : 'text-muted-foreground hover:text-foreground',
@@ -218,10 +218,10 @@ export const Sidebar = ({ activeView, onViewChange, theme, onThemeToggle, canOpe
         <button
           onClick={onThemeToggle}
           aria-label="切换主题"
-          className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
-          title={theme === 'light' ? '切换到 Dark 主题' : theme === 'dark' ? '切换到 Perplexity 主题' : '切换到 Light 主题'}
+          className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-md text-muted-foreground hover:text-foreground motion-interactive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          title={theme === 'light' ? '切换到 Dark 主题' : '切换到 Light 主题'}
         >
-          {theme === 'light' ? <Sun className="h-5 w-5" /> : theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+          {theme === 'light' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           <span className="text-2xs leading-none">主题</span>
         </button>
       </nav>
