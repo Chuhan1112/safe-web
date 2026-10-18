@@ -11,7 +11,10 @@ import { AlertCircle, Play, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const PRESETS_BY_MARKET: Record<string, { value: string; label: string }[]> = {
-  US: [{ value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI' }],
+  US: [
+    { value: 'US_CORE_3_PDD', label: 'US_CORE_3_PDD · MC(PDD) + UC + RSI（回撤优先）' },
+    { value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI（收益优先）' },
+  ],
   CN: [
     { value: 'CN_CORE_2', label: 'CN_CORE_2 · UC + RSI（推荐）' },
     { value: 'CN_CORE_3', label: 'CN_CORE_3 · MC + UC + RSI（legacy）' },
@@ -49,7 +52,7 @@ function MetricTile({ label, value, tone }: { label: string; value: string; tone
 export function EnsemblePage() {
   const { market } = useMarket()
   const presets = PRESETS_BY_MARKET[market] ?? PRESETS_BY_MARKET.US
-  const [preset, setPreset] = useState(presets[0]?.value ?? 'US_CORE_3')
+  const [preset, setPreset] = useState(presets[0]?.value ?? 'US_CORE_3_PDD')
   const [range, setRange] = useState(DEFAULT_RANGE)
   const [holdoutStart, setHoldoutStart] = useState('')
   const [result, setResult] = useState<EnsembleRunResponse | null>(null)
@@ -58,7 +61,7 @@ export function EnsemblePage() {
 
   // 切市场时同步切换 preset，并清空旧市场结果，避免 CN/US 串数据。
   useEffect(() => {
-    const next = PRESETS_BY_MARKET[market]?.[0]?.value ?? 'US_CORE_3'
+    const next = PRESETS_BY_MARKET[market]?.[0]?.value ?? 'US_CORE_3_PDD'
     setPreset(next)
     setResult(null)
     setError(null)
