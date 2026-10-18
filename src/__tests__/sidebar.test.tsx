@@ -14,6 +14,7 @@ vi.mock("lucide-react", () => ({
   HeartPulse: () => <span>HeartPulse</span>,
   FlaskConical: () => <span>FlaskConical</span>,
   Search: () => <span>Search</span>,
+  Layers: () => <span>Layers</span>,
   Moon: () => <span>Moon</span>,
   Sun: () => <span>Sun</span>,
   Sparkles: () => <span>Sparkles</span>,

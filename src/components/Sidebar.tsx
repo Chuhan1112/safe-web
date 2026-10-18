@@ -1,6 +1,6 @@
 // src/components/Sidebar.tsx — 响应式侧边栏（桌面图标+文字 / 移动底部 Tab 栏）
 import { cn } from '@/lib/utils'
-import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff } from 'lucide-react'
+import { BarChart3, LineChart, Target, Zap, Database, HeartPulse, FlaskConical, ListChecks, Moon, Sun, Search, Wifi, WifiOff, Layers } from 'lucide-react'
 import { useMarket } from '@/contexts/MarketContext'
 import { api } from '@/lib/api/client'
 import { useState, useEffect } from 'react'
@@ -23,6 +23,7 @@ const publicNavItems = [
   { id: 'signals', icon: ListChecks, label: '信号' },
   { id: 'analysis', icon: LineChart, label: '分析' },
   { id: 'research', icon: Search, label: '研究' },
+  { id: 'ensemble', icon: Layers, label: '组合' },
 ]
 
 const privateNavItems = [

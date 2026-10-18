@@ -2,6 +2,89 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { api } from "@/lib/api/client"
 import { requestCache } from "@/utils/requestCache"
 
+describe("api.runEnsemble", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  // 回归：preset 请求必须带上市场，否则 CN_CORE_3 / US_CORE_3 会互相串市场。
+  it("把 preset 与 market 一起提交到 /ensemble/run", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        market: "CN",
+        strategies: ["MOMENTUM_CONFIRM"],
+        config: {},
+        full_metrics: {},
+        avg_weights: {},
+        correlation: {},
+        contribution: {},
+        sleeve_metrics: {},
+      }),
+    }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    await api.runEnsemble({
+      preset: "CN_CORE_3",
+      market: "CN",
+      startDate: "2022-02-01",
+      endDate: "2026-10-16",
+      holdoutStart: "2025-07-01",
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(init.method).toBe("POST")
+    const body = JSON.parse(String(init.body))
+    expect(body.preset).toBe("CN_CORE_3")
+    expect(body.market).toBe("CN")
+    expect(body.start_date).toBe("2022-02-01")
+    expect(body.end_date).toBe("2026-10-16")
+    expect(body.holdout_start).toBe("2025-07-01")
+  })
+
+  it("把自定义策略和组合约束透传到请求体", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ strategies: [], config: {}, full_metrics: {} }),
+    }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    await api.runEnsemble({
+      market: "US",
+      strategies: ["MOMENTUM_CONFIRM", "ULTIMATE_COMBINED"],
+      method: "inverse_vol",
+      maxPairCorrelation: 0.5,
+      maxDdContribution: 0.15,
+      minWeight: 0.05,
+      startDate: "2022-02-01",
+      endDate: "2026-10-16",
+    })
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(String(init.body))
+    expect(body.strategies).toEqual(["MOMENTUM_CONFIRM", "ULTIMATE_COMBINED"])
+    expect(body.method).toBe("inverse_vol")
+    expect(body.max_pair_correlation).toBe(0.5)
+    expect(body.max_dd_contribution).toBe(0.15)
+    expect(body.min_weight).toBe(0.05)
+  })
+
+  it("接口报错时抛出后端的 detail 文案", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      json: async () => ({ detail: "strategies must not be empty" }),
+    }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    await expect(
+      api.runEnsemble({ market: "US", startDate: "2022-02-01", endDate: "2026-10-16" }),
+    ).rejects.toThrow("strategies must not be empty")
+  })
+})
+
 describe("api.getTickerData", () => {
   afterEach(() => {
     vi.restoreAllMocks()

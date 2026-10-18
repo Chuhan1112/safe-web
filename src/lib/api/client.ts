@@ -1,6 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { requestCache } from '@/utils/requestCache'
 import { deduplicateRequest } from '@/utils/deduplicateRequest'
+import { normalizeEnsembleResult, type EnsembleRunResponse } from './ensemble'
+
+export interface EnsembleRunRequest {
+  market: string
+  preset?: string
+  strategies?: string[]
+  method?: string
+  lookback?: number
+  rebalance?: string
+  maxWeight?: number
+  minWeight?: number
+  maxPairCorrelation?: number
+  maxDdContribution?: number
+  startDate: string
+  endDate: string
+  holdoutStart?: string
+}
+
+export type { EnsembleRunResponse }
 
 export const API_BASE: string =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://127.0.0.1:8000'
@@ -718,6 +737,24 @@ export const api = {
             throw new Error(error.detail || `Failed to fetch analysis for ${symbol}`);
         }
         return response.json();
+    },
+
+    async runEnsemble(request: EnsembleRunRequest): Promise<EnsembleRunResponse> {
+        const body: Record<string, any> = { market: request.market };
+        if (request.preset) body.preset = request.preset;
+        if (request.strategies?.length) body.strategies = request.strategies;
+        if (request.method) body.method = request.method;
+        if (request.lookback != null) body.lookback = request.lookback;
+        if (request.rebalance) body.rebalance = request.rebalance;
+        if (request.maxWeight != null) body.max_weight = request.maxWeight;
+        if (request.minWeight != null) body.min_weight = request.minWeight;
+        if (request.maxPairCorrelation != null) body.max_pair_correlation = request.maxPairCorrelation;
+        if (request.maxDdContribution != null) body.max_dd_contribution = request.maxDdContribution;
+        if (request.startDate) body.start_date = request.startDate;
+        if (request.endDate) body.end_date = request.endDate;
+        if (request.holdoutStart) body.holdout_start = request.holdoutStart;
+
+        return normalizeEnsembleResult(await post<any>('/ensemble/run', body));
     },
 
     async getPortfolioSignals(preset?: string, weights?: Record<string, number>, strategyParams?: Record<string, any>, market?: string): Promise<PortfolioSignalResult> {
