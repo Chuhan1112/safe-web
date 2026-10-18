@@ -31,6 +31,9 @@ export interface EnsembleConstraints {
   minWeightViolations: number
   maxObservedPairCorrelation: number
   maxObservedDdContribution: number
+  ddContributionBinding: boolean
+  ddContributionBreached: boolean
+  pairCorrelationIsSoftTarget: boolean
 }
 
 export interface EnsembleRunResponse {
@@ -103,6 +106,9 @@ export function normalizeEnsembleResult(raw: AnyRecord): EnsembleRunResponse {
       minWeightViolations: toNumber(d?.min_weight_violations),
       maxObservedPairCorrelation: toNumber(d?.max_observed_pair_correlation),
       maxObservedDdContribution: toNumber(d?.max_observed_dd_contribution),
+      ddContributionBinding: Boolean(d?.dd_contribution_binding),
+      ddContributionBreached: Boolean(d?.dd_contribution_breached),
+      pairCorrelationIsSoftTarget: Boolean(d?.pair_correlation_is_soft_target ?? true),
     },
     method: String(config?.method ?? 'equal'),
     maxWeight: toNumber(config?.max_weight, 0.6),

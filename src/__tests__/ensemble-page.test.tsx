@@ -80,6 +80,9 @@ const RESPONSE: EnsembleRunResponse = {
     minWeightViolations: 0,
     maxObservedPairCorrelation: 0.387,
     maxObservedDdContribution: 0.166,
+    ddContributionBinding: false,
+    ddContributionBreached: false,
+    pairCorrelationIsSoftTarget: true,
   },
   method: 'equal',
   maxWeight: 0.6,
@@ -131,7 +134,7 @@ describe('EnsemblePage', () => {
     expect(weightTable.textContent).toContain('-16.6%')
 
     // 约束生效情况可见
-    expect(screen.getByText(/max corr cap/i)).toBeTruthy()
+    expect(screen.getByText(/corr soft target/i)).toBeTruthy()
   })
 
   it('接口失败时展示错误信息而不是空白', async () => {
@@ -157,7 +160,7 @@ describe('EnsemblePage', () => {
 
     await waitFor(() => {
       const select = screen.getByLabelText(/preset/i) as HTMLSelectElement
-      expect(select.value).toBe('CN_CORE_3')
+      expect(select.value).toBe('CN_CORE_2')
     })
     expect(screen.queryByText('1.46')).toBeNull()
   })

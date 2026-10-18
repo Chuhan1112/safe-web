@@ -12,7 +12,10 @@ import { cn } from '@/lib/utils'
 
 const PRESETS_BY_MARKET: Record<string, { value: string; label: string }[]> = {
   US: [{ value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI' }],
-  CN: [{ value: 'CN_CORE_3', label: 'CN_CORE_3 · MC + UC + RSI' }],
+  CN: [
+    { value: 'CN_CORE_2', label: 'CN_CORE_2 · UC + RSI（推荐）' },
+    { value: 'CN_CORE_3', label: 'CN_CORE_3 · MC + UC + RSI（legacy）' },
+  ],
 }
 
 const DEFAULT_RANGE = { start: '2022-02-01', end: '2026-10-16' }
@@ -299,7 +302,7 @@ export function EnsemblePage() {
                   tone={result.constraints.minWeightBinding ? 'neg' : undefined}
                 />
                 <MetricTile
-                  label="Max Corr Cap"
+                  label="Corr Soft Target"
                   value={result.constraints.maxPairCorrelation.toFixed(2)}
                 />
                 <MetricTile
@@ -313,11 +316,11 @@ export function EnsemblePage() {
                   }
                 />
                 <MetricTile
-                  label="Max DD Contrib"
+                  label="DD Contrib Target"
                   value={pct(result.constraints.maxDdContribution)}
                 />
                 <MetricTile
-                  label="Observed Max DD"
+                  label="Observed DD Contrib"
                   value={pct(result.constraints.maxObservedDdContribution)}
                   tone={
                     result.constraints.maxObservedDdContribution >
@@ -331,7 +334,19 @@ export function EnsemblePage() {
                   value={String(result.constraints.minWeightViolations)}
                   tone={result.constraints.minWeightViolations > 0 ? 'neg' : undefined}
                 />
+                <MetricTile
+                  label="DD Target Binding"
+                  value={result.constraints.ddContributionBinding ? 'binding' : 'inactive'}
+                />
+                <MetricTile
+                  label="DD Target Breached"
+                  value={result.constraints.ddContributionBreached ? 'breached' : 'within'}
+                  tone={result.constraints.ddContributionBreached ? 'neg' : undefined}
+                />
               </div>
+              <p className="mt-3 text-2xs text-muted-foreground">
+                相关性是软惩罚目标，观测值可能高于目标；回撤贡献在调仓日执行上限，两次调仓之间回撤加深时实际路径仍可能超过目标。
+              </p>
               {result.constraints.minWeightViolations > 0 && (
                 <Badge variant="destructive" className="mt-3">
                   min_weight 出现违反
