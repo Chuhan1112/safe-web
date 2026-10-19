@@ -558,17 +558,19 @@ export const api = {
         return data
     },
 
-    async getStrategies(): Promise<{ strategies: StrategySpec[] }> {
-        const cached = requestCache.get<{ strategies: StrategySpec[] }>('strategies')
+    async getStrategies(market?: string): Promise<{ strategies: StrategySpec[] }> {
+        const cacheKey = `strategies:${market ?? 'default'}`
+        const cached = requestCache.get<{ strategies: StrategySpec[] }>(cacheKey)
         if (cached) return cached
 
-        const response = await fetch(`${API_BASE}/strategies`)
+        const qs = market ? `?market=${encodeURIComponent(market)}` : ''
+        const response = await fetch(`${API_BASE}/strategies${qs}`)
         if (!response.ok) {
             const error = await response.json().catch(() => ({}))
             throw new Error(error.detail || `HTTP ${response.status}: ${response.statusText}`)
         }
         const data: { strategies: StrategySpec[] } = await response.json()
-        requestCache.set('strategies', data, 5 * 60_000)
+        requestCache.set(cacheKey, data, 5 * 60_000)
         return data
     },
 
