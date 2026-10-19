@@ -2,8 +2,12 @@ export type BadgeTone = 'neutral' | 'long' | 'short' | 'risk'
 
 export function triggerLabel(trigger?: string | null): string | null {
   if (!trigger) return null
+  if (trigger.endsWith('+stop')) {
+    const base = triggerLabel(trigger.slice(0, -5))
+    return base ? `${base} + 止损` : '止损'
+  }
+  if (trigger === 'stop') return '止损'
   if (trigger.startsWith('drift')) return '权重漂移'
-  if (trigger === 'calendar+stop') return '例调 + 止损'
   const base = trigger.split(':')[0]
   switch (base) {
     case 'initial':

@@ -1,17 +1,56 @@
 --- a/src/private/App.tsx
 +++ b/src/private/App.tsx
-@@ -87,6 +87,10 @@
- 
- const resolveLabel = (t: typeof translations['en'], param: StrategyParamSpec) => {
+@@ -89,6 +89,10 @@
    return (t as any)[param.label] || param.label;
-+};
-+
-+const resolveGroupLabel = (t: typeof translations['en'], group: string) => {
-+  return (t as any)[`param_group_${group}`] || group;
  };
  
++const resolveGroupLabel = (t: typeof translations['en'], group: string) => {
++  return (t as any)[`param_group_${group}`] || group;
++};
++
  // --- Main App ---
-@@ -714,7 +718,7 @@
+ function App() {
+   const [lang, setLang] = useLocalStorage<Language>('cortex:lang', 'zh')
+@@ -131,7 +135,11 @@
+   const [chartView, setChartView] = useState<"equity" | "drawdown">("equity")
+   const [dirtyParams, setDirtyParams] = useState(false)
+   const [chartKey, setChartKey] = useState(0)
+-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
++  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
++    execution: true,
++    risk: true,
++    entry_quality: true,
++  })
+   const [logFilter, setLogFilter] = useState("")
+   const [logsExpanded, setLogsExpanded] = useState(true)
+   // 日志视图：'trade' = 逐笔成交明细，'rebalance' = 调仓汇总
+@@ -391,9 +399,23 @@
+   const activeLogView: 'trade' | 'rebalance' = logView === 'trade' && hasTradeLogs ? 'trade' : 'rebalance'
+   const logTotalCount = activeLogView === 'trade' ? tradeLogCount : rebalanceLogCount
+ 
+-  // 新一轮回测结果到达时重置视图，避免沿用上一轮的手动切换
++  // 切策略时把执行/风控等高级组恢复为默认折叠，避免 20+ 参数全部铺开。
+   useEffect(() => {
+-    setLogView(((result?.trade_logs?.length || 0) > 0) ? 'trade' : 'rebalance')
++    setCollapsedGroups({ execution: true, risk: true, entry_quality: true });
++  }, [strategy])
++
++  // 新一轮回测结果到达时重置视图，优先尊重后端 display_mode。
++  useEffect(() => {
++    const displayMode = result?.metadata?.display_mode
++    const hasTrades = (result?.trade_logs?.length || 0) > 0
++    const hasRebalance = (result?.logs?.length || 0) > 0
++    setLogView(
++      displayMode === 'rebalance' && hasRebalance
++        ? 'rebalance'
++        : hasTrades
++          ? 'trade'
++          : 'rebalance',
++    )
+   }, [result])
+ 
+   useEffect(() => {
+@@ -714,7 +736,7 @@
                              ).map(([group, params]) => (
                                <div key={group} className="space-y-2">
                                  <div className="flex items-center justify-between px-1">
@@ -20,7 +59,7 @@
                                    <Button
                                      size="sm"
                                      variant="ghost"
-@@ -784,6 +788,51 @@
+@@ -784,6 +806,51 @@
                                          )
                                        }
  
