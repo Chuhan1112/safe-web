@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils'
 
 const PRESETS_BY_MARKET: Record<string, { value: string; label: string }[]> = {
   US: [
-    { value: 'US_CORE_3_PDD', label: 'US_CORE_3_PDD · MC(PDD) + UC + RSI（回撤优先）' },
-    { value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI（收益优先）' },
+    { value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI（推荐）' },
+    { value: 'US_CORE_3_PDD', label: 'US_CORE_3_PDD · MC(PDD)（对照，PIT 下劣于基线）' },
   ],
   CN: [
     { value: 'CN_CORE_2_Q', label: 'CN_CORE_2_Q · UC + RSI(质量过滤)（推荐）' },
