@@ -137,6 +137,7 @@ export interface StrategyParamSpec {
     description?: string;
     optimize?: boolean;
     optimize_range?: { min: number; max: number; step: number };
+    choices?: string[];
 }
 
 export interface StrategySpec {
@@ -148,6 +149,11 @@ export interface StrategySpec {
     data_requirement: string;
     params: StrategyParamSpec[];
     tags: string[];
+    parent_id?: string | null;
+    risk_family?: string | null;
+    execution_model?: 'calendar' | 'adaptive' | 'confirm' | 'dynamic' | 'order_driven' | string;
+    default_rebalance_freq?: string | null;
+    supports_rebalance_freq?: boolean;
 }
 
 export interface BacktestParams {

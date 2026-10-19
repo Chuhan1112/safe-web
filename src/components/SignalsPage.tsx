@@ -15,6 +15,7 @@ import { usePageVisible } from '@/hooks/usePageVisible'
 import { useMarketColors } from '@/hooks/useMarketColors'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api/client'
+import { ALL_STRATEGIES, STRATEGY_LABELS } from '@/constants/strategies'
 
 interface SignalItem {
   ticker: string
@@ -42,29 +43,6 @@ interface SignalsResponse {
   portfolio: { ticker: string; weight: number }[]
   cash_weight: string
   metadata: Record<string, unknown>
-}
-
-// 策略列表按市场过滤：部分策略只在特定市场有效
-const ALL_STRATEGIES: Record<string, string[]> = {
-  US: [
-    'ADAPTIVE_MOMENTUM',
-    'MOMENTUM_CONFIRM',
-    'ULTIMATE_COMBINED',
-    'MOMENTUM',
-    'COMMANDER',
-    'PRACTICAL_ATR',
-    'PRACTICAL_VBO',
-    'PRACTICAL_RSI',
-  ],
-  CN: [
-    'ADAPTIVE_MOMENTUM',
-    'MOMENTUM_CONFIRM',
-    'MOMENTUM',
-    'COMMANDER',
-    'PRACTICAL_ATR',
-    'PRACTICAL_VBO',
-    'PRACTICAL_BOLLINGER',
-  ],
 }
 
 function actionBadgeVariant(action: string) {
@@ -262,7 +240,7 @@ export function SignalsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {(ALL_STRATEGIES[market] || ALL_STRATEGIES.US).map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>{STRATEGY_LABELS[s] ?? s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

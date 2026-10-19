@@ -1,6 +1,14 @@
 import { memo, useMemo, useState, useCallback, Fragment } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { TickerLink } from '@/components/TickerLink'
+import {
+  badgeToneClass,
+  horizonLabel,
+  horizonTone,
+  triggerLabel,
+  triggerTone,
+} from '@/utils/rebalanceBadges'
 import { cn, formatPrice } from '@/lib/utils'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -17,6 +25,8 @@ interface RebalanceLogRow {
   Prices?: Record<string, number>
   ExitPrices?: Record<string, number>
   IsEmpty?: boolean
+  DynamicTrigger?: string
+  Horizon?: string
   [key: string]: unknown
 }
 
@@ -53,6 +63,8 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
     return (
       String(log.Date || '').toLowerCase().includes(needle) ||
       String(log.PortfolioValue || '').toLowerCase().includes(needle) ||
+      String(log.DynamicTrigger || '').toLowerCase().includes(needle) ||
+      String(log.Horizon || '').toLowerCase().includes(needle) ||
       (log.Selected || []).join(',').toLowerCase().includes(needle) ||
       Object.values(log.Names || {}).join(',').toLowerCase().includes(needle)
     )
@@ -110,6 +122,26 @@ export const RebalanceLogsTable = memo(({ logs, logFilter, t, handleTickerClick,
                     {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                     {dateStr}
                   </span>
+                  {(log.Horizon || log.DynamicTrigger) && (
+                    <div className="mt-1 flex flex-wrap gap-1 pl-4">
+                      {log.Horizon && (
+                        <Badge
+                          variant="outline"
+                          className={cn('h-4 px-1.5 py-0 text-2xs font-medium', badgeToneClass(horizonTone(log.Horizon)))}
+                        >
+                          {horizonLabel(log.Horizon)}
+                        </Badge>
+                      )}
+                      {log.DynamicTrigger && (
+                        <Badge
+                          variant="outline"
+                          className={cn('h-4 px-1.5 py-0 text-2xs font-medium', badgeToneClass(triggerTone(log.DynamicTrigger)))}
+                        >
+                          {triggerLabel(log.DynamicTrigger)}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="font-mono text-xs font-medium tabular-nums py-3 text-right">
                   {currencySymbol}{log.PortfolioValue?.toLocaleString?.(undefined, { maximumFractionDigits: 0 })}

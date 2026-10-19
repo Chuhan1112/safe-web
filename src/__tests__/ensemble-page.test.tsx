@@ -160,7 +160,7 @@ describe('EnsemblePage', () => {
 
     await waitFor(() => {
       const select = screen.getByLabelText(/preset/i) as HTMLSelectElement
-      expect(select.value).toBe('CN_CORE_2')
+      expect(select.value).toBe('CN_CORE_2_Q')
     })
     expect(screen.queryByText('1.46')).toBeNull()
   })
