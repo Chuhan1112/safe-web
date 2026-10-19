@@ -16,7 +16,8 @@ const PRESETS_BY_MARKET: Record<string, { value: string; label: string }[]> = {
     { value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI（收益优先）' },
   ],
   CN: [
-    { value: 'CN_CORE_2', label: 'CN_CORE_2 · UC + RSI（推荐）' },
+    { value: 'CN_CORE_2_Q', label: 'CN_CORE_2_Q · UC + RSI(质量过滤)（推荐）' },
+    { value: 'CN_CORE_2', label: 'CN_CORE_2 · UC + RSI（旧版对照）' },
     { value: 'CN_CORE_2_RISK', label: 'CN_CORE_2_RISK · UC + RSI · 周级DD监控' },
     { value: 'CN_CORE_3', label: 'CN_CORE_3 · MC + UC + RSI（legacy）' },
   ],
