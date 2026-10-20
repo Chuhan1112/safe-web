@@ -12,7 +12,8 @@ import { cn } from '@/lib/utils'
 
 const PRESETS_BY_MARKET: Record<string, { value: string; label: string }[]> = {
   US: [
-    { value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI（推荐）' },
+    { value: 'US_MOMENTUM_70', label: 'US_MOMENTUM_70 · 纯动量 70% 仓位（推荐）' },
+    { value: 'US_CORE_3', label: 'US_CORE_3 · MC + UC + RSI（对照，组合稀释动量）' },
     { value: 'US_CORE_3_PDD', label: 'US_CORE_3_PDD · MC(PDD)（对照，PIT 下劣于基线）' },
   ],
   CN: [
