@@ -350,3 +350,28 @@ describe("api.runMarketSync", () => {
     expect(url).toContain("market=CN")
   })
 })
+
+describe("api.getStrategies", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    requestCache.clear()
+  })
+
+  it("passes market and caches per market", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ strategies: [] }),
+    }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    await api.getStrategies("CN")
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/strategies?market=CN")
+
+    await api.getStrategies("CN")
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    await api.getStrategies("US")
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(String(fetchMock.mock.calls[1][0])).toContain("/strategies?market=US")
+  })
+})

@@ -137,6 +137,7 @@ export interface StrategyParamSpec {
     description?: string;
     optimize?: boolean;
     optimize_range?: { min: number; max: number; step: number };
+    choices?: string[];
 }
 
 export interface StrategySpec {
@@ -148,6 +149,11 @@ export interface StrategySpec {
     data_requirement: string;
     params: StrategyParamSpec[];
     tags: string[];
+    parent_id?: string | null;
+    risk_family?: string | null;
+    execution_model?: 'calendar' | 'adaptive' | 'confirm' | 'dynamic' | 'order_driven' | string;
+    default_rebalance_freq?: string | null;
+    supports_rebalance_freq?: boolean;
 }
 
 export interface BacktestParams {
@@ -552,17 +558,19 @@ export const api = {
         return data
     },
 
-    async getStrategies(): Promise<{ strategies: StrategySpec[] }> {
-        const cached = requestCache.get<{ strategies: StrategySpec[] }>('strategies')
+    async getStrategies(market?: string): Promise<{ strategies: StrategySpec[] }> {
+        const cacheKey = `strategies:${market ?? 'default'}`
+        const cached = requestCache.get<{ strategies: StrategySpec[] }>(cacheKey)
         if (cached) return cached
 
-        const response = await fetch(`${API_BASE}/strategies`)
+        const qs = market ? `?market=${encodeURIComponent(market)}` : ''
+        const response = await fetch(`${API_BASE}/strategies${qs}`)
         if (!response.ok) {
             const error = await response.json().catch(() => ({}))
             throw new Error(error.detail || `HTTP ${response.status}: ${response.statusText}`)
         }
         const data: { strategies: StrategySpec[] } = await response.json()
-        requestCache.set('strategies', data, 5 * 60_000)
+        requestCache.set(cacheKey, data, 5 * 60_000)
         return data
     },
 

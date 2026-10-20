@@ -1,0 +1,153 @@
+--- a/src/private/App.tsx
++++ b/src/private/App.tsx
+@@ -89,6 +89,10 @@
+   return (t as any)[param.label] || param.label;
+ };
+ 
++const resolveGroupLabel = (t: typeof translations['en'], group: string) => {
++  return (t as any)[`param_group_${group}`] || group;
++};
++
+ // --- Main App ---
+ function App() {
+   const [lang, setLang] = useLocalStorage<Language>('cortex:lang', 'zh')
+@@ -131,7 +135,11 @@
+   const [chartView, setChartView] = useState<"equity" | "drawdown">("equity")
+   const [dirtyParams, setDirtyParams] = useState(false)
+   const [chartKey, setChartKey] = useState(0)
+-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
++  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
++    execution: true,
++    risk: true,
++    entry_quality: true,
++  })
+   const [logFilter, setLogFilter] = useState("")
+   const [logsExpanded, setLogsExpanded] = useState(true)
+   // 日志视图：'trade' = 逐笔成交明细，'rebalance' = 调仓汇总
+@@ -179,7 +187,7 @@
+     const loadStrategies = async () => {
+       try {
+         setStrategiesLoading(true)
+-        const data = await api.getStrategies()
++        const data = await api.getStrategies(market)
+         setStrategies(data.strategies)
+         if (data.strategies.length > 0 && !data.strategies.find(s => s.id === strategy)) {
+           setStrategy(data.strategies[0].id)
+@@ -194,7 +202,7 @@
+       }
+     }
+     loadStrategies()
+-  }, [])
++  }, [market])
+ 
+   useEffect(() => {
+     if (!strategies.length) return
+@@ -391,9 +399,23 @@
+   const activeLogView: 'trade' | 'rebalance' = logView === 'trade' && hasTradeLogs ? 'trade' : 'rebalance'
+   const logTotalCount = activeLogView === 'trade' ? tradeLogCount : rebalanceLogCount
+ 
+-  // 新一轮回测结果到达时重置视图，避免沿用上一轮的手动切换
++  // 切策略时把执行/风控等高级组恢复为默认折叠，避免 20+ 参数全部铺开。
+   useEffect(() => {
+-    setLogView(((result?.trade_logs?.length || 0) > 0) ? 'trade' : 'rebalance')
++    setCollapsedGroups({ execution: true, risk: true, entry_quality: true });
++  }, [strategy])
++
++  // 新一轮回测结果到达时重置视图，优先尊重后端 display_mode。
++  useEffect(() => {
++    const displayMode = result?.metadata?.display_mode
++    const hasTrades = (result?.trade_logs?.length || 0) > 0
++    const hasRebalance = (result?.logs?.length || 0) > 0
++    setLogView(
++      displayMode === 'rebalance' && hasRebalance
++        ? 'rebalance'
++        : hasTrades
++          ? 'trade'
++          : 'rebalance',
++    )
+   }, [result])
+ 
+   useEffect(() => {
+@@ -714,7 +736,7 @@
+                             ).map(([group, params]) => (
+                               <div key={group} className="space-y-2">
+                                 <div className="flex items-center justify-between px-1">
+-                                  <div className="text-2xs font-black uppercase tracking-widest text-primary/60">{group}</div>
++                                  <div className="text-2xs font-black uppercase tracking-widest text-primary/60">{resolveGroupLabel(t, group)}</div>
+                                   <Button
+                                     size="sm"
+                                     variant="ghost"
+@@ -784,6 +806,51 @@
+                                         )
+                                       }
+ 
++                                      if (param.type === 'select' && param.choices?.length) {
++                                        return (
++                                          <div key={param.key} className={cn(
++                                            "space-y-1 p-2.5 rounded-lg border transition-all h-full",
++                                            isLoneItem ? "lg:col-span-2" : "",
++                                            changed ? "bg-primary/5 border-primary/20 ring-1 ring-primary/10" : "bg-secondary/20 border-border/50"
++                                          )}>
++                                            <div className="flex flex-col">
++                                              <Label className="text-2xs font-bold text-muted-foreground/80 uppercase tracking-tight">{labelNode}</Label>
++                                              {statusNode && <div className="mt-1">{statusNode}</div>}
++                                            </div>
++                                            <select
++                                              value={String(value ?? '')}
++                                              onChange={(e) => updateParam(param.key, e.target.value)}
++                                              className="mt-1 h-8 w-full rounded-md border border-border bg-background px-2 text-xs"
++                                            >
++                                              {param.choices.map((choice) => (
++                                                <option key={choice} value={choice}>{choice}</option>
++                                              ))}
++                                            </select>
++                                          </div>
++                                        )
++                                      }
++
++                                      if (param.type === 'string') {
++                                        return (
++                                          <div key={param.key} className={cn(
++                                            "space-y-1 p-2.5 rounded-lg border transition-all h-full",
++                                            isLoneItem ? "lg:col-span-2" : "",
++                                            changed ? "bg-primary/5 border-primary/20 ring-1 ring-primary/10" : "bg-secondary/20 border-border/50"
++                                          )}>
++                                            <div className="flex flex-col">
++                                              <Label className="text-2xs font-bold text-muted-foreground/80 uppercase tracking-tight">{labelNode}</Label>
++                                              {statusNode && <div className="mt-1">{statusNode}</div>}
++                                            </div>
++                                            <Input
++                                              type="text"
++                                              value={String(value ?? '')}
++                                              onChange={(e) => updateParam(param.key, e.target.value)}
++                                              className="h-8 text-xs font-mono mt-1"
++                                            />
++                                          </div>
++                                        )
++                                      }
++
+                                       if (param.min == null || param.max == null || param.step == null) {
+                                         return (
+                                           <div key={param.key} className={cn(
+--- a/src/private/lib/translations.ts
++++ b/src/private/lib/translations.ts
+@@ -45,6 +45,9 @@
+         loading_strategies: "Loading strategies...",
+         no_strategies: "No strategies",
+         param_group_default: "General",
++        param_group_execution: "Execution",
++        param_group_risk: "Short-horizon Risk",
++        param_group_entry_quality: "Entry Quality",
+         strategy_momentum: "Momentum (Trend Following)",
+         strategy_mean_reversion: "Mean Reversion (Dip Buyer)",
+         strategy_multi_factor: "Smart Alpha (Multi-Factor)",
+@@ -249,6 +252,9 @@
+         loading_strategies: "加载策略中...",
+         no_strategies: "暂无策略",
+         param_group_default: "通用",
++        param_group_execution: "执行周期",
++        param_group_risk: "短线风控",
++        param_group_entry_quality: "入场质量",
+         strategy_momentum: "动量策略 (Momentum)",
+         strategy_mean_reversion: "均值回归 (Mean Reversion)",
+         strategy_multi_factor: "智能多因子 (Smart Alpha)",

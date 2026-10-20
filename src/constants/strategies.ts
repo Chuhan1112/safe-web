@@ -1,0 +1,38 @@
+// 策略入口按市场过滤。动态变体紧邻其核心策略，便于识别为同一 alpha 的执行层变体。
+export const ALL_STRATEGIES: Record<string, string[]> = {
+  US: [
+    'ADAPTIVE_MOMENTUM',
+    'MOMENTUM_DYNAMIC',
+    'MOMENTUM',
+    'MOMENTUM_CONFIRM',
+    'COMMANDER_DYNAMIC',
+    'COMMANDER',
+    'PRACTICAL_QM_DYNAMIC',
+    'PRACTICAL_QM',
+    'ULTIMATE_COMBINED',
+    'PRACTICAL_ATR',
+    'PRACTICAL_VBO',
+    'PRACTICAL_RSI',
+  ],
+  CN: [
+    'ADAPTIVE_MOMENTUM',
+    'MOMENTUM_DYNAMIC',
+    'MOMENTUM',
+    'MOMENTUM_CONFIRM',
+    'COMMANDER_DYNAMIC',
+    'COMMANDER',
+    'PRACTICAL_QM_DYNAMIC',
+    'PRACTICAL_QM',
+    'PRACTICAL_ATR',
+    'PRACTICAL_VBO',
+    'PRACTICAL_BOLLINGER',
+  ],
+}
+
+export const STRATEGY_LABELS: Record<string, string> = {
+  ADAPTIVE_MOMENTUM: 'ADAPTIVE_MOMENTUM · 自适应',
+  MOMENTUM_DYNAMIC: 'MOMENTUM · 动态周期',
+  MOMENTUM_CONFIRM: 'MOMENTUM · 确认型',
+  COMMANDER_DYNAMIC: 'COMMANDER · 动态周期',
+  PRACTICAL_QM_DYNAMIC: 'PRACTICAL_QM · 动态周期',
+}
